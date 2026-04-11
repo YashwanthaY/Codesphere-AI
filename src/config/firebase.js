@@ -1,25 +1,17 @@
-// WHAT THIS FILE DOES:
-// Initializes Firebase connection
-// Exports auth object used across the app
-// Replace the config values with YOUR Firebase project values
-
+// Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
-import { getAuth, GoogleAuthProvider } from "firebase/auth";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
 
-// ⚠️ Replace ALL these values with your Firebase config
+// Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey:            "YOUR_API_KEY",
-  authDomain:        "YOUR_PROJECT_ID.firebaseapp.com",
-  projectId:         "YOUR_PROJECT_ID",
-  storageBucket:     "YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId:             "YOUR_APP_ID",
+  apiKey: "AIzaSyCAT1dXIXi21v7bpgrfMpAzH6MYyt0wMcc",
+  authDomain: "codesphere-ai.firebaseapp.com",
+  projectId: "codesphere-ai",
+  storageBucket: "codesphere-ai.firebasestorage.app",
+  messagingSenderId: "906279114113",
+  appId: "1:906279114113:web:dbbb4e84067858a9480480"
 };
 
 // Initialize Firebase
-const app      = initializeApp(firebaseConfig);
-export const auth     = getAuth(app);
-export const provider = new GoogleAuthProvider();
-
-// Force account selection every time
-provider.setCustomParameters({ prompt: "select_account" });
+const app = initializeApp(firebaseConfig);

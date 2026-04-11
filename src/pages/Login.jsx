@@ -8,7 +8,6 @@ import { useAuth } from "../context/AuthContext";
 import {
   Zap, GitBranch, Database, Cpu,
   Code2, BarChart3, MessageSquare, Sparkles,
-  Chrome
 } from "lucide-react";
 
 const FEATURES = [
