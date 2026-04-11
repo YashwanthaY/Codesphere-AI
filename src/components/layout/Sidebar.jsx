@@ -5,6 +5,9 @@ import {
   Code2, BarChart3, MessageSquare, Sparkles,
   ChevronLeft, ChevronRight, Zap
 } from "lucide-react";
+import { useAuth } from "../../context/AuthContext";
+import { LogOut } from "lucide-react";
+const { user, signOut } = useAuth();
 
 
 const NAV_ITEMS = [
@@ -16,6 +19,7 @@ const NAV_ITEMS = [
   { path: "/analytics",label: "Analytics",      icon: BarChart3,       color: "text-pink-400",    badge: null },
   { path: "/interview",label: "Interview Coach",icon: MessageSquare,   color: "text-violet-400",  badge: null },
   { path: "/portfolio",label: "Portfolio Gen",  icon: Sparkles,        color: "text-rose-400",    badge: null },
+  { path: "/leaderboard", label: "Leaderboard", icon: Trophy, color: "text-amber-400", badge: null },
   { path: "/leaderboard", label: "Leaderboard", icon: Trophy, color: "text-amber-400", badge: null },
 ];
 
@@ -131,19 +135,43 @@ export default function Sidebar({ collapsed, setCollapsed, totalXP, currentLevel
       </div>
 
       {/* ── USER CARD ── */}
-      {!collapsed && (
-        <div className="px-3 pb-4 flex-shrink-0">
-          <div className="flex items-center gap-2 bg-slate-800 rounded-lg p-2.5">
-            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-violet-500 flex items-center justify-center text-[11px] font-semibold text-white flex-shrink-0">
-              AK
-            </div>
-            <div className="min-w-0">
-              <p className="text-xs font-medium text-slate-200 truncate">Arjun Kumar</p>
-              <p className="text-[10px] text-slate-500">Final Year B.Tech</p>
-            </div>
+{!collapsed && user && (
+  <div className="px-3 pb-4 flex-shrink-0">
+    <div className="bg-slate-800 rounded-lg p-2.5 border border-slate-700">
+      <div className="flex items-center gap-2 mb-2">
+        {user.photoURL ? (
+          <img
+            src={user.photoURL}
+            alt={user.displayName}
+            className="w-7 h-7 rounded-full flex-shrink-0"
+          />
+        ) : (
+          <div className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-violet-500
+                          flex items-center justify-center text-[11px] font-semibold
+                          text-white flex-shrink-0">
+            {user.displayName ? user.displayName[0] : "U"}
           </div>
+        )}
+        <div className="min-w-0 flex-1">
+          <p className="text-xs font-medium text-slate-200 truncate">
+            {user.displayName || "User"}
+          </p>
+          <p className="text-[10px] text-slate-500 truncate">{user.email}</p>
         </div>
-      )}
+      </div>
+      <button
+        onClick={signOut}
+        className="w-full flex items-center justify-center gap-1.5
+                   py-1.5 rounded-lg bg-slate-700 hover:bg-red-500/20
+                   hover:text-red-400 text-slate-400 text-xs
+                   transition-all"
+      >
+        <LogOut size={11} />
+        Sign out
+      </button>
+    </div>
+  </div>
+)}
     </aside>
   );
 }
