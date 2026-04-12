@@ -2,7 +2,7 @@ import { initializeApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
 
 const firebaseConfig = {
-  apiKey:            "AIzaSyCAT1dXIXi21v7bpgrfMpAzH6Myt0wMcc",
+  apiKey:            "AIzaSyCAT1dXIXi21v7bpgrfMpAzH6MYyt0wMcc",
   authDomain:        "codesphere-ai.firebaseapp.com",
   projectId:         "codesphere-ai",
   storageBucket:     "codesphere-ai.firebasestorage.app",

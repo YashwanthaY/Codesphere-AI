@@ -1,8 +1,3 @@
-// WHAT THIS FILE DOES:
-// Beautiful login page shown to unauthenticated users
-// Single "Sign in with Google" button
-// Shows app features to convince user to sign up
-
 import { useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import {
@@ -11,16 +6,16 @@ import {
 } from "lucide-react";
 
 const FEATURES = [
-  { icon: GitBranch,    color: "text-emerald-400", bg: "bg-emerald-500/10", label: "DSA Visualizer",  desc: "Animate 9+ algorithms"     },
-  { icon: Database,     color: "text-cyan-400",    bg: "bg-cyan-500/10",    label: "SQL Playground",  desc: "Live SQL in browser"        },
-  { icon: Cpu,          color: "text-amber-400",   bg: "bg-amber-500/10",   label: "OS Simulator",    desc: "CPU scheduling & paging"    },
-  { icon: Code2,        color: "text-green-400",   bg: "bg-green-500/10",   label: "AI Code Review",  desc: "Gemini AI reviews your code"},
-  { icon: BarChart3,    color: "text-pink-400",    bg: "bg-pink-500/10",    label: "GitHub Analytics",desc: "Power BI style dashboard"   },
-  { icon: MessageSquare,color: "text-violet-400",  bg: "bg-violet-500/10",  label: "Interview Coach", desc: "AI mock interviews"         },
+  { icon: GitBranch,    color: "text-emerald-400", bg: "bg-emerald-500/10", label: "DSA Visualizer",  desc: "Animate 9+ algorithms"      },
+  { icon: Database,     color: "text-cyan-400",    bg: "bg-cyan-500/10",    label: "SQL Playground",  desc: "Live SQL in browser"         },
+  { icon: Cpu,          color: "text-amber-400",   bg: "bg-amber-500/10",   label: "OS Simulator",    desc: "CPU scheduling and paging"   },
+  { icon: Code2,        color: "text-green-400",   bg: "bg-green-500/10",   label: "AI Code Review",  desc: "Gemini AI reviews your code" },
+  { icon: BarChart3,    color: "text-pink-400",    bg: "bg-pink-500/10",    label: "GitHub Analytics",desc: "Power BI style dashboard"    },
+  { icon: MessageSquare,color: "text-violet-400",  bg: "bg-violet-500/10",  label: "Interview Coach", desc: "AI mock interviews"          },
 ];
 
 export default function Login() {
-  const { signIn } = useAuth();
+  const { signIn, error } = useAuth();
   const [loading, setLoading] = useState(false);
 
   async function handleSignIn() {
@@ -33,23 +28,19 @@ export default function Login() {
     <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
       <div className="w-full max-w-4xl">
 
-        {/* ── MAIN CARD ── */}
+        {/* Main card */}
         <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
           <div className="grid grid-cols-1 lg:grid-cols-2">
 
             {/* LEFT — Branding */}
             <div className="p-10 flex flex-col justify-center bg-gradient-to-br from-slate-900 to-slate-800">
-
-              {/* Logo */}
               <div className="flex items-center gap-3 mb-8">
                 <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center">
                   <Zap size={24} className="text-white" />
                 </div>
                 <div>
                   <h1 className="text-xl font-bold text-white">CodeSphere AI</h1>
-                  <p className="text-xs text-blue-400 tracking-widest uppercase">
-                    Developer Platform
-                  </p>
+                  <p className="text-xs text-blue-400 tracking-widest uppercase">Developer Platform</p>
                 </div>
               </div>
 
@@ -64,16 +55,14 @@ export default function Login() {
                 track GitHub stats, and ace interviews — all in one place.
               </p>
 
-              {/* Stats */}
               <div className="grid grid-cols-3 gap-4">
                 {[
-                  { value: "8",    label: "Modules"    },
-                  { value: "AI",   label: "Powered"    },
-                  { value: "Free", label: "Forever"    },
+                  { value: "8",    label: "Modules"  },
+                  { value: "AI",   label: "Powered"  },
+                  { value: "Free", label: "Forever"  },
                 ].map(function(stat) {
                   return (
-                    <div key={stat.label}
-                         className="bg-slate-800 rounded-xl p-3 text-center border border-slate-700">
+                    <div key={stat.label} className="bg-slate-800 rounded-xl p-3 text-center border border-slate-700">
                       <p className="text-xl font-bold text-blue-400">{stat.value}</p>
                       <p className="text-xs text-slate-500">{stat.label}</p>
                     </div>
@@ -82,23 +71,17 @@ export default function Login() {
               </div>
             </div>
 
-            {/* RIGHT — Login form */}
+            {/* RIGHT — Login */}
             <div className="p-10 flex flex-col justify-center">
-
-              <h3 className="text-xl font-semibold text-white mb-2">
-                Get started for free
-              </h3>
-              <p className="text-sm text-slate-400 mb-8">
-                Sign in with your Google account — no password needed
-              </p>
+              <h3 className="text-xl font-semibold text-white mb-2">Get started for free</h3>
+              <p className="text-sm text-slate-400 mb-6">Sign in with your Google account — no password needed</p>
 
               {/* Features grid */}
-              <div className="grid grid-cols-2 gap-2 mb-8">
+              <div className="grid grid-cols-2 gap-2 mb-6">
                 {FEATURES.map(function(f) {
                   const Icon = f.icon;
                   return (
-                    <div key={f.label}
-                         className="flex items-center gap-2 p-2 rounded-lg bg-slate-800 border border-slate-700">
+                    <div key={f.label} className="flex items-center gap-2 p-2 rounded-lg bg-slate-800 border border-slate-700">
                       <div className={"w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 " + f.bg}>
                         <Icon size={13} className={f.color} />
                       </div>
@@ -111,15 +94,21 @@ export default function Login() {
                 })}
               </div>
 
+              {/* Error message */}
+              {error && (
+                <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-3 mb-4">
+                  <p className="text-red-400 text-xs text-center">{error}</p>
+                  <p className="text-slate-500 text-[10px] text-center mt-1">
+                    Make sure popups are allowed for localhost
+                  </p>
+                </div>
+              )}
+
               {/* Google Sign In Button */}
               <button
                 onClick={handleSignIn}
                 disabled={loading}
-                className="w-full flex items-center justify-center gap-3
-                           py-3.5 bg-white hover:bg-gray-50
-                           disabled:opacity-70 disabled:cursor-not-allowed
-                           rounded-xl text-sm font-semibold text-gray-700
-                           transition-all shadow-lg hover:shadow-xl"
+                className="w-full flex items-center justify-center gap-3 py-3.5 bg-white hover:bg-gray-50 disabled:opacity-70 disabled:cursor-not-allowed rounded-xl text-sm font-semibold text-gray-700 transition-all shadow-lg hover:shadow-xl"
               >
                 {loading ? (
                   <div className="w-5 h-5 border-2 border-gray-300 border-t-gray-700 rounded-full animate-spin" />
@@ -142,7 +131,6 @@ export default function Login() {
           </div>
         </div>
 
-        {/* Bottom note */}
         <p className="text-center text-xs text-slate-600 mt-4">
           Built with React.js · Python Flask · Google Gemini AI
         </p>
