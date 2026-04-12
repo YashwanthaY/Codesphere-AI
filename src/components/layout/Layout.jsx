@@ -4,16 +4,18 @@ import Sidebar from "./Sidebar";
 import Navbar from "./Navbar";
 import { useDarkMode } from "../../hooks/useDarkMode";
 import { useXP } from "../../context/XPContext";
+import { useAuth } from "../../context/AuthContext";
 
 const PAGE_TITLES = {
-  "/":          "Dashboard",
-  "/dsa":       "DSA Visualizer",
-  "/sql":       "SQL Playground",
-  "/os":        "OS Simulator",
-  "/review":    "AI Code Reviewer",
-  "/analytics": "Analytics Dashboard",
-  "/interview": "Interview Coach",
-  "/portfolio": "Portfolio Generator",
+  "/":            "Dashboard",
+  "/dsa":         "DSA Visualizer",
+  "/sql":         "SQL Playground",
+  "/os":          "OS Simulator",
+  "/review":      "AI Code Reviewer",
+  "/analytics":   "Analytics Dashboard",
+  "/interview":   "Interview Coach",
+  "/portfolio":   "Portfolio Generator",
+  "/leaderboard": "Leaderboard",
 };
 
 export default function Layout({ children }) {
@@ -22,13 +24,11 @@ export default function Layout({ children }) {
   const location                  = useLocation();
   const pageTitle = PAGE_TITLES[location.pathname] || "CodeSphere AI";
 
-  // Get XP data to pass to Sidebar
   const { totalXP, currentLevel, progress, nextLevel } = useXP();
+  const { user, signOut } = useAuth();
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">
-
-      {/* Fixed Sidebar — receives XP props */}
       <Sidebar
         collapsed={collapsed}
         setCollapsed={setCollapsed}
@@ -36,26 +36,17 @@ export default function Layout({ children }) {
         currentLevel={currentLevel}
         progress={progress}
         nextLevel={nextLevel}
+        user={user}
+        onSignOut={signOut}
       />
-
-      {/* Fixed Top Bar */}
       <Navbar
         isDark={isDark}
         toggleTheme={toggle}
         pageTitle={pageTitle}
         collapsed={collapsed}
       />
-
-      {/* Main Content */}
-      <main
-        className={
-          "pt-14 min-h-screen transition-all duration-300 " +
-          (collapsed ? "ml-16" : "ml-56")
-        }
-      >
-        <div className="p-6">
-          {children}
-        </div>
+      <main className={"pt-14 min-h-screen transition-all duration-300 " + (collapsed ? "ml-16" : "ml-56")}>
+        <div className="p-6">{children}</div>
       </main>
     </div>
   );
