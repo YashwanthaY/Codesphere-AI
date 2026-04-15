@@ -4,12 +4,11 @@ export default {
   darkMode: "class",
   theme: {
     extend: {
-      colors: {
-        navy: {
-          900: "#0F172A",
-          800: "#1E293B",
-          700: "#334155",
-        },
+      animation: {
+        "fade-in-up": "fadeInUp 0.4s ease forwards",
+        "fade-in":    "fadeIn 0.3s ease forwards",
+        "scale-in":   "scaleIn 0.3s ease forwards",
+        "float":      "float 3s ease-in-out infinite",
       },
     },
   },

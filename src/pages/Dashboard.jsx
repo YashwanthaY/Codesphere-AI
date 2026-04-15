@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   GitBranch, Database, Cpu, Code2,
@@ -7,38 +8,24 @@ import {
 import { useLocalStorage } from "../hooks/useLocalStorage";
 import { useAuth } from "../context/AuthContext";
 
-const STAT_CARDS = [
-  { label: "Modules Active",  value: "9",   sub: "All modules unlocked",  icon: Zap,    color: "text-blue-400",    bg: "bg-blue-500/10",    bar: "bg-blue-500",    delay: "delay-0" },
-  { label: "Day Streak",      value: "7",   sub: "↑ 2 from last week",    icon: Flame,  color: "text-emerald-400", bg: "bg-emerald-500/10", bar: "bg-emerald-500", delay: "delay-1" },
-  { label: "Problems Solved", value: "42",  sub: "DSA + SQL combined",    icon: Target, color: "text-amber-400",   bg: "bg-amber-500/10",   bar: "bg-amber-500",   delay: "delay-2" },
-  { label: "Interview Score", value: "8.4", sub: "Last session avg /10",  icon: Trophy, color: "text-violet-400",  bg: "bg-violet-500/10",  bar: "bg-violet-500",  delay: "delay-3" },
-];
-
 const MODULES = [
-  { path: "/dsa",         label: "DSA Visualizer",  icon: GitBranch,     desc: "Animate sorting, trees, and graphs with C++ code", color: "text-emerald-400", bg: "bg-emerald-500/10", border: "hover:border-emerald-500/50", status: "Active", statusColor: "text-emerald-400 bg-emerald-500/10", delay: "delay-0" },
-  { path: "/sql",         label: "SQL Playground",  icon: Database,      desc: "Live SQL in browser using WebAssembly + Chart.js",  color: "text-cyan-400",    bg: "bg-cyan-500/10",    border: "hover:border-cyan-500/50",    status: "Active", statusColor: "text-emerald-400 bg-emerald-500/10", delay: "delay-1" },
-  { path: "/os",          label: "OS Simulator",    icon: Cpu,           desc: "FCFS, Round Robin, Gantt charts live",              color: "text-amber-400",   bg: "bg-amber-500/10",   border: "hover:border-amber-500/50",   status: "Active", statusColor: "text-amber-400 bg-amber-500/10",   delay: "delay-2" },
-  { path: "/review",      label: "AI Code Review",  icon: Code2,         desc: "Gemini AI scores your code quality 1-10",           color: "text-green-400",   bg: "bg-green-500/10",   border: "hover:border-green-500/50",   status: "Active", statusColor: "text-emerald-400 bg-emerald-500/10", delay: "delay-3" },
-  { path: "/analytics",   label: "Analytics",       icon: BarChart3,     desc: "GitHub stats in Power BI style dashboard",          color: "text-pink-400",    bg: "bg-pink-500/10",    border: "hover:border-pink-500/50",    status: "Active", statusColor: "text-emerald-400 bg-emerald-500/10", delay: "delay-4" },
-  { path: "/interview",   label: "Interview Coach", icon: MessageSquare, desc: "AI asks questions, scores your answers",            color: "text-violet-400",  bg: "bg-violet-500/10",  border: "hover:border-violet-500/50",  status: "New",    statusColor: "text-violet-400 bg-violet-500/10",  delay: "delay-5" },
-  { path: "/portfolio",   label: "Portfolio Gen",   icon: Sparkles,      desc: "AI writes your portfolio from a form",              color: "text-rose-400",    bg: "bg-rose-500/10",    border: "hover:border-rose-500/50",    status: "New",    statusColor: "text-rose-400 bg-rose-500/10",      delay: "delay-6" },
-  { path: "/leaderboard", label: "Leaderboard",     icon: Trophy,        desc: "Track XP, achievements and rankings",               color: "text-amber-400",   bg: "bg-amber-500/10",   border: "hover:border-amber-500/50",   status: "New",    statusColor: "text-amber-400 bg-amber-500/10",   delay: "delay-7" },
+  { path: "/dsa",         label: "DSA Visualizer",  icon: GitBranch,     desc: "Animate sorting, trees, and graphs with C++ code", color: "text-emerald-400", bg: "bg-emerald-500/10", border: "hover:border-emerald-500/50", status: "Active", statusColor: "text-emerald-400 bg-emerald-500/10" },
+  { path: "/sql",         label: "SQL Playground",  icon: Database,      desc: "Live SQL in browser using WebAssembly + Chart.js",  color: "text-cyan-400",    bg: "bg-cyan-500/10",    border: "hover:border-cyan-500/50",    status: "Active", statusColor: "text-emerald-400 bg-emerald-500/10" },
+  { path: "/os",          label: "OS Simulator",    icon: Cpu,           desc: "FCFS, Round Robin, Gantt charts live",              color: "text-amber-400",   bg: "bg-amber-500/10",   border: "hover:border-amber-500/50",   status: "Active", statusColor: "text-amber-400 bg-amber-500/10"   },
+  { path: "/review",      label: "AI Code Review",  icon: Code2,         desc: "Gemini AI scores your code quality 1-10",           color: "text-green-400",   bg: "bg-green-500/10",   border: "hover:border-green-500/50",   status: "Active", statusColor: "text-emerald-400 bg-emerald-500/10" },
+  { path: "/analytics",   label: "Analytics",       icon: BarChart3,     desc: "GitHub stats in Power BI style dashboard",          color: "text-pink-400",    bg: "bg-pink-500/10",    border: "hover:border-pink-500/50",    status: "Active", statusColor: "text-emerald-400 bg-emerald-500/10" },
+  { path: "/interview",   label: "Interview Coach", icon: MessageSquare, desc: "AI asks questions, scores your answers",            color: "text-violet-400",  bg: "bg-violet-500/10",  border: "hover:border-violet-500/50",  status: "New",    statusColor: "text-violet-400 bg-violet-500/10"  },
+  { path: "/portfolio",   label: "Portfolio Gen",   icon: Sparkles,      desc: "AI writes your portfolio from a form",              color: "text-rose-400",    bg: "bg-rose-500/10",    border: "hover:border-rose-500/50",    status: "New",    statusColor: "text-rose-400 bg-rose-500/10"      },
+  { path: "/leaderboard", label: "Leaderboard",     icon: Trophy,        desc: "Track XP, achievements and rankings",               color: "text-amber-400",   bg: "bg-amber-500/10",   border: "hover:border-amber-500/50",   status: "New",    statusColor: "text-amber-400 bg-amber-500/10"   },
 ];
 
 const SKILLS = [
-  { name: "React.js + Redux", pct: 82, color: "bg-blue-500",    delay: "delay-0" },
-  { name: "Data Structures",  pct: 75, color: "bg-emerald-500", delay: "delay-1" },
-  { name: "SQL & DBMS",       pct: 68, color: "bg-cyan-500",    delay: "delay-2" },
-  { name: "OS Concepts",      pct: 55, color: "bg-amber-500",   delay: "delay-3" },
-  { name: "Python Flask",     pct: 60, color: "bg-violet-500",  delay: "delay-4" },
-  { name: "Tailwind CSS",     pct: 90, color: "bg-pink-500",    delay: "delay-5" },
-];
-
-const ACTIVITY = [
-  { icon: GitBranch,     label: "Bubble Sort Visualized", time: "2 hours ago · DSA",     score: "+10 XP", iconBg: "bg-emerald-500/10 text-emerald-400", path: "/dsa"       },
-  { icon: MessageSquare, label: "Interview Session #4",   time: "Yesterday · React + JS", score: "8.2/10", iconBg: "bg-violet-500/10 text-violet-400",   path: "/interview" },
-  { icon: Code2,         label: "Python code reviewed",   time: "Yesterday · AI Review",  score: "9/10",   iconBg: "bg-green-500/10 text-green-400",     path: "/review"    },
-  { icon: Database,      label: "SQL JOIN challenge",      time: "2 days ago · SQL",       score: "+15 XP", iconBg: "bg-cyan-500/10 text-cyan-400",       path: "/sql"       },
+  { name: "React.js + Redux", pct: 82, color: "bg-blue-500"    },
+  { name: "Data Structures",  pct: 75, color: "bg-emerald-500" },
+  { name: "SQL & DBMS",       pct: 68, color: "bg-cyan-500"    },
+  { name: "OS Concepts",      pct: 55, color: "bg-amber-500"   },
+  { name: "Python Flask",     pct: 60, color: "bg-violet-500"  },
+  { name: "Tailwind CSS",     pct: 90, color: "bg-pink-500"    },
 ];
 
 const QUICK_ACTIONS = [
@@ -49,35 +36,94 @@ const QUICK_ACTIONS = [
 ];
 
 export default function Dashboard() {
-  const navigate = useNavigate();
-  const [streak] = useLocalStorage("streak", 7);
-  const { user } = useAuth();
+  const navigate    = useNavigate();
+  const { user }    = useAuth();
+
+  const [streak,    setStreak]  = useLocalStorage("streak", 1);
+  const [totalXP]               = useLocalStorage("codesphere-xp", 0);
+  const [xpHistory]             = useLocalStorage("codesphere-xp-history", []);
+  const [sessions]              = useLocalStorage("interview-sessions", []);
+
+  // ── Auto-increment streak daily ──────────────────────────────────────────
+  useEffect(function() {
+    const lastVisit = localStorage.getItem("last-visit-date");
+    const today     = new Date().toDateString();
+
+    if (lastVisit !== today) {
+      localStorage.setItem("last-visit-date", today);
+      if (lastVisit) {
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        if (lastVisit === yesterday.toDateString()) {
+          setStreak(function(prev) { return prev + 1; });
+        } else {
+          setStreak(1);
+        }
+      } else {
+        setStreak(1);
+      }
+    }
+  }, []);
+
+  // ── Real stats ────────────────────────────────────────────────────────────
+  const avgScore = sessions.length > 0
+    ? (sessions.reduce(function(s, r) { return s + parseFloat(r.score || 0); }, 0) / sessions.length).toFixed(1)
+    : "—";
 
   const hour     = new Date().getHours();
   const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
-  const name     = user ? (user.displayName ? user.displayName.split(" ")[0] : "there") : "Arjun";
+  const name     = user
+    ? (user.displayName ? user.displayName.split(" ")[0] : "there")
+    : "Arjun";
+
+  const STAT_CARDS = [
+    { label: "Total XP",       value: totalXP,          sub: "Earn XP by using modules",  icon: Zap,    color: "text-blue-400",    bg: "bg-blue-500/10",    bar: "bg-blue-500"    },
+    { label: "Day Streak",     value: streak,           sub: "Keep visiting daily!",      icon: Flame,  color: "text-emerald-400", bg: "bg-emerald-500/10", bar: "bg-emerald-500" },
+    { label: "Actions Done",   value: xpHistory.length, sub: "Total XP-earning actions",  icon: Target, color: "text-amber-400",   bg: "bg-amber-500/10",   bar: "bg-amber-500"   },
+    { label: "Interview Score",value: avgScore,         sub: "Average across sessions",   icon: Trophy, color: "text-violet-400",  bg: "bg-violet-500/10",  bar: "bg-violet-500"  },
+  ];
+
+  const ACTIVITY = sessions.length > 0
+    ? sessions.slice(0, 4).map(function(s, i) {
+        return {
+          icon:    MessageSquare,
+          label:   "Interview: " + s.topic,
+          time:    s.date + " · " + s.difficulty,
+          score:   s.score + "/10",
+          iconBg:  "bg-violet-500/10 text-violet-400",
+          path:    "/interview",
+        };
+      })
+    : [
+        { icon: GitBranch,     label: "Bubble Sort Visualized", time: "Try DSA module",     score: "+10 XP", iconBg: "bg-emerald-500/10 text-emerald-400", path: "/dsa"       },
+        { icon: MessageSquare, label: "Start an interview",     time: "Interview Coach",    score: "+20 XP", iconBg: "bg-violet-500/10 text-violet-400",   path: "/interview" },
+        { icon: Code2,         label: "Review your code",       time: "AI Code Reviewer",  score: "+15 XP", iconBg: "bg-green-500/10 text-green-400",     path: "/review"    },
+        { icon: Database,      label: "Run a SQL query",        time: "SQL Playground",    score: "+5 XP",  iconBg: "bg-cyan-500/10 text-cyan-400",       path: "/sql"       },
+      ];
 
   return (
     <div className="space-y-6 max-w-7xl">
 
-      {/* ── GREETING ── */}
-      <div className="animate-fade-in-up delay-0">
+      {/* GREETING */}
+      <div className="animate-fade-in-up">
         <h1 className="text-2xl font-semibold text-white">
           {greeting}, {name} 👋
         </h1>
         <p className="text-slate-400 mt-1 text-sm">
-          You have a {streak}-day streak. Keep it up — campus placements are getting closer!
+          {streak > 1
+            ? "You have a " + streak + "-day streak! Keep it up — campus placements are getting closer!"
+            : "Welcome back! Start using modules to build your streak!"}
         </p>
       </div>
 
-      {/* ── STAT CARDS ── */}
+      {/* STAT CARDS */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-        {STAT_CARDS.map(function(card) {
+        {STAT_CARDS.map(function(card, i) {
           const Icon = card.icon;
           return (
             <div
               key={card.label}
-              className={"relative overflow-hidden rounded-xl p-5 bg-slate-900 border border-slate-800 card-hover animate-fade-in-up " + card.delay}
+              className={"relative overflow-hidden rounded-xl p-5 bg-slate-900 border border-slate-800 card-hover animate-fade-in-up delay-" + i}
             >
               <div className={"absolute top-0 left-0 right-0 h-0.5 " + card.bar} />
               <div className={"absolute top-4 right-4 w-9 h-9 rounded-lg " + card.bg + " flex items-center justify-center"}>
@@ -91,7 +137,7 @@ export default function Dashboard() {
         })}
       </div>
 
-      {/* ── MODULE CARDS ── */}
+      {/* MODULE CARDS */}
       <div className="animate-fade-in-up delay-2">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-sm font-semibold text-white">Modules Overview</h2>
@@ -103,14 +149,14 @@ export default function Dashboard() {
           </button>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-          {MODULES.map(function(mod) {
+          {MODULES.map(function(mod, i) {
             const Icon = mod.icon;
             return (
               <Link
                 key={mod.path}
                 to={mod.path}
                 className={"block p-4 rounded-xl bg-slate-900 border border-slate-800 " +
-                           mod.border + " card-hover animate-fade-in-up cursor-pointer group " + mod.delay}
+                           mod.border + " card-hover animate-fade-in-up cursor-pointer group delay-" + (i % 8)}
               >
                 <div className={"w-10 h-10 rounded-lg " + mod.bg + " flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-200"}>
                   <Icon size={20} className={mod.color} />
@@ -129,7 +175,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* ── SKILLS + ACTIVITY ── */}
+      {/* SKILLS + ACTIVITY */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
         {/* Skills */}
@@ -139,9 +185,9 @@ export default function Dashboard() {
             <BookOpen size={14} className="text-slate-500" />
           </div>
           <div className="space-y-3.5">
-            {SKILLS.map(function(skill) {
+            {SKILLS.map(function(skill, i) {
               return (
-                <div key={skill.name} className={"animate-fade-in-up " + skill.delay}>
+                <div key={skill.name} className={"animate-fade-in-up delay-" + i}>
                   <div className="flex justify-between text-xs mb-1.5">
                     <span className="text-slate-300">{skill.name}</span>
                     <span className="text-slate-400">{skill.pct}%</span>
@@ -161,7 +207,9 @@ export default function Dashboard() {
         {/* Activity */}
         <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 animate-fade-in-up delay-4">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-semibold text-white">Recent Activity</h3>
+            <h3 className="text-sm font-semibold text-white">
+              {sessions.length > 0 ? "Recent Sessions" : "Get Started"}
+            </h3>
             <Flame size={14} className="text-slate-500" />
           </div>
           <div className="space-y-1">
@@ -191,9 +239,9 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* ── QUICK ACTIONS ── */}
+      {/* QUICK ACTIONS */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 animate-fade-in-up delay-5">
-        {QUICK_ACTIONS.map(function(action, i) {
+        {QUICK_ACTIONS.map(function(action) {
           return (
             <Link
               key={action.path}
