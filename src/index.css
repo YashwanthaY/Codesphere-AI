@@ -217,3 +217,77 @@ html.light .card-hover:hover {
 .page-enter {
   animation: fadeInUp 0.4s ease forwards;
 }
+
+/* ── MOBILE RESPONSIVE ADDITIONS ── */
+/* Paste these at the BOTTOM of your existing index.css */
+
+/* Safe area for iPhone bottom bar */
+.safe-area-pb {
+  padding-bottom: env(safe-area-inset-bottom, 8px);
+}
+
+/* Mobile card improvements */
+@media (max-width: 640px) {
+  .card-hover:hover {
+    transform: none;
+  }
+
+  /* Full width buttons on mobile */
+  .mobile-full {
+    width: 100% !important;
+  }
+
+  /* Smaller text on mobile */
+  .mobile-text-sm {
+    font-size: 12px !important;
+  }
+
+  /* Hide desktop-only elements */
+  .desktop-only {
+    display: none !important;
+  }
+}
+
+/* Tablet improvements */
+@media (max-width: 1024px) {
+  /* Reduce padding on tablet */
+  .tablet-p-4 {
+    padding: 16px !important;
+  }
+}
+
+/* Bottom nav active indicator */
+.bottom-nav-active {
+  position: relative;
+}
+.bottom-nav-active::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 20px;
+  height: 2px;
+  background: #3b82f6;
+  border-radius: 0 0 2px 2px;
+}
+
+/* Smooth mobile transitions */
+@media (prefers-reduced-motion: no-preference) {
+  .mobile-transition {
+    transition: all 0.2s ease;
+  }
+}
+
+/* Mobile grid fixes */
+@media (max-width: 640px) {
+  .grid-cols-4 {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  .xl\:grid-cols-4 {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  .xl\:grid-cols-6 {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
