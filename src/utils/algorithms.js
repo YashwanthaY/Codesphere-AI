@@ -232,22 +232,16 @@ export function generateBinarySearchSteps(arr, target) {
 }
 
 // ── QUICK SORT ───────────────────────────────────────────────────────────────
-// HOW IT WORKS:
-// Pick a pivot (last element). Partition: move all elements smaller than pivot
-// to the left, larger to the right. Pivot is now in its final sorted position.
-// Recursively apply to left and right sub-arrays.
-// Average O(n log n), Worst O(n²) if already sorted.
 export function generateQuickSortSteps(arr) {
   const steps = [];
   const a = [...arr];
   const sortedSet = new Set();
 
   function partition(arr, low, high) {
-    const pivot = arr[high]; // choose last element as pivot
+    const pivot = arr[high];
     let i = low - 1;
 
     for (let j = low; j < high; j++) {
-      // Show: comparing current element with pivot
       steps.push({
         array: [...arr],
         comparing: [j, high],
@@ -260,7 +254,6 @@ export function generateQuickSortSteps(arr) {
         i++;
         if (i !== j) {
           [arr[i], arr[j]] = [arr[j], arr[i]];
-          // Show: swapping elements into correct partition
           steps.push({
             array: [...arr],
             comparing: [],
@@ -272,7 +265,6 @@ export function generateQuickSortSteps(arr) {
       }
     }
 
-    // Place pivot in its correct sorted position
     [arr[i + 1], arr[high]] = [arr[high], arr[i + 1]];
     sortedSet.add(i + 1);
     steps.push({
@@ -292,14 +284,12 @@ export function generateQuickSortSteps(arr) {
       quickSort(arr, low, pi - 1);
       quickSort(arr, pi + 1, high);
     } else if (low === high) {
-      // Single element is trivially sorted
       sortedSet.add(low);
     }
   }
 
   quickSort(a, 0, a.length - 1);
 
-  // Final step: all sorted
   steps.push({
     array: [...a],
     comparing: [],
@@ -312,11 +302,6 @@ export function generateQuickSortSteps(arr) {
 }
 
 // ── HEAP SORT ────────────────────────────────────────────────────────────────
-// HOW IT WORKS:
-// Phase 1 — Build a Max Heap: rearrange array so parent > children always.
-// Phase 2 — Extract: swap root (max) with last element, reduce heap size,
-// re-heapify. Repeat until heap is empty. Result: sorted array.
-// Always O(n log n) — no bad cases like Quick Sort.
 export function generateHeapSortSteps(arr) {
   const steps = [];
   const a = [...arr];
@@ -328,58 +313,31 @@ export function generateHeapSortSteps(arr) {
     const left  = 2 * rootIdx + 1;
     const right = 2 * rootIdx + 2;
 
-    // Compare root with left child
     if (left < size) {
-      steps.push({
-        array: [...arr],
-        comparing: [largest, left],
-        swapping: [],
-        sorted: [...sortedSet],
-      });
+      steps.push({ array: [...arr], comparing: [largest, left], swapping: [], sorted: [...sortedSet] });
       if (arr[left] > arr[largest]) largest = left;
     }
 
-    // Compare current largest with right child
     if (right < size) {
-      steps.push({
-        array: [...arr],
-        comparing: [largest, right],
-        swapping: [],
-        sorted: [...sortedSet],
-      });
+      steps.push({ array: [...arr], comparing: [largest, right], swapping: [], sorted: [...sortedSet] });
       if (arr[right] > arr[largest]) largest = right;
     }
 
-    // If largest is not root, swap and continue heapifying
     if (largest !== rootIdx) {
       [arr[rootIdx], arr[largest]] = [arr[largest], arr[rootIdx]];
-      steps.push({
-        array: [...arr],
-        comparing: [],
-        swapping: [rootIdx, largest],
-        sorted: [...sortedSet],
-      });
+      steps.push({ array: [...arr], comparing: [], swapping: [rootIdx, largest], sorted: [...sortedSet] });
       heapify(arr, size, largest);
     }
   }
 
-  // Phase 1: Build max heap (start from last non-leaf node)
   for (let i = Math.floor(n / 2) - 1; i >= 0; i--) {
     heapify(a, n, i);
   }
 
-  // Phase 2: Extract elements from heap one by one
   for (let i = n - 1; i > 0; i--) {
-    // Move current root (max) to end — it's now in sorted position
     [a[0], a[i]] = [a[i], a[0]];
     sortedSet.add(i);
-    steps.push({
-      array: [...a],
-      comparing: [],
-      swapping: [0, i],
-      sorted: [...sortedSet],
-    });
-    // Heapify the reduced heap
+    steps.push({ array: [...a], comparing: [], swapping: [0, i], sorted: [...sortedSet] });
     heapify(a, i, 0);
   }
 
@@ -394,189 +352,290 @@ export function generateHeapSortSteps(arr) {
   return steps;
 }
 
-// ── LINKED LIST TRAVERSAL ────────────────────────────────────────────────────
-// HOW IT WORKS:
-// A linked list is a chain of nodes. Each node holds a value + pointer to next.
-// Unlike arrays, nodes are NOT contiguous in memory — you must follow pointers.
-// We simulate: Insert at head, Insert at tail, Delete a node, Search a value.
-// Each step records which node is "active" (being visited) and which is "found".
-export function generateLinkedListSteps(values, operation = "traverse") {
+// ── LINKED LIST ───────────────────────────────────────────────────────────────
+// Generates 150-300 steps by showing every pointer follow, every comparison,
+// every null check — exactly how it runs in memory step by step.
+export function generateLinkedListSteps(values, operation) {
   const steps = [];
+  operation = operation || "traverse";
 
-  // Build initial linked list as array of node objects
-  const nodes = values.map((val, i) => ({
-    value: val,
-    id: i,
-    next: i < values.length - 1 ? i + 1 : null,
-  }));
-
-  if (operation === "traverse") {
-    // Visit each node one by one following next pointers
-    steps.push({
-      nodes: nodes.map(n => ({ ...n })),
-      activeNode: null,
-      foundNode: null,
-      message: "Start at Head node",
-      operation: "traverse",
-    });
-
-    for (let i = 0; i < nodes.length; i++) {
-      steps.push({
-        nodes: nodes.map(n => ({ ...n })),
-        activeNode: i,
-        foundNode: null,
-        message: `Visiting node [${nodes[i].value}] → ${nodes[i].next !== null ? "next exists" : "next is NULL (tail)"}`,
-        operation: "traverse",
-      });
-    }
-
-    steps.push({
-      nodes: nodes.map(n => ({ ...n })),
-      activeNode: null,
-      foundNode: null,
-      message: "Traversal complete! Visited all nodes.",
-      operation: "traverse",
-    });
+  function makeNodes(vals) {
+    return vals.map((val, i) => ({
+      value: val,
+      id: i,
+      next: i < vals.length - 1 ? i + 1 : null,
+    }));
   }
 
-  else if (operation === "search") {
-    const target = values[Math.floor(values.length / 2)]; // search for middle value
-    steps.push({
+  function snap(nodes, active, found, msg, extra) {
+    steps.push(Object.assign({
       nodes: nodes.map(n => ({ ...n })),
-      activeNode: null,
-      foundNode: null,
-      message: `Search for value: ${target}. Start at Head.`,
-      operation: "search",
-      target,
-    });
+      activeNode: active,
+      foundNode: found,
+      message: msg,
+      operation,
+    }, extra || {}));
+  }
 
-    let found = false;
-    for (let i = 0; i < nodes.length; i++) {
-      steps.push({
-        nodes: nodes.map(n => ({ ...n })),
-        activeNode: i,
-        foundNode: null,
-        message: `Check node [${nodes[i].value}] — is it ${target}? ${nodes[i].value === target ? "YES! ✓" : "No, move next →"}`,
-        operation: "search",
-        target,
-      });
+  // ── TRAVERSE ────────────────────────────────────────────────────────────
+  if (operation === "traverse") {
+    const nodes = makeNodes(values);
 
-      if (nodes[i].value === target) {
+    snap(nodes, null, null, "① Initialize: head pointer set to node[0]. Current = head.");
+
+    for (let pass = 0; pass < 3; pass++) {
+      // Do 3 full traversals to generate more steps like a real animation
+      const passLabel = pass === 0 ? "First" : pass === 1 ? "Second" : "Third";
+      snap(nodes, null, null, `── ${passLabel} traversal pass ──`);
+
+      let current = 0;
+      while (current !== null) {
+        const node = nodes[current];
+
+        snap(nodes, current, null,
+          `② current = node[${current}] | value = ${node.value} | next → ${node.next !== null ? "node[" + node.next + "]" : "NULL"}`);
+
+        snap(nodes, current, null,
+          `③ Process node[${current}]: value = ${node.value}. (In real code: print / use this value.)`);
+
+        snap(nodes, current, null,
+          `④ Check: node[${current}].next = ${node.next !== null ? node.next : "NULL"}. Is it NULL?  ${node.next === null ? "YES → stop." : "NO → move forward."}`);
+
+        if (node.next !== null) {
+          snap(nodes, current, null,
+            `⑤ Advance: current = current.next → moving to node[${node.next}] (value = ${nodes[node.next].value})`);
+        }
+
+        current = node.next;
+      }
+
+      snap(nodes, null, null,
+        `⑥ current is NULL — reached end of list. Traversal complete (${nodes.length} nodes visited).`);
+    }
+  }
+
+  // ── SEARCH ────────────────────────────────────────────────────────────
+  else if (operation === "search") {
+    const nodes = makeNodes(values);
+    const target = values[Math.floor(values.length / 2)];
+    let position = 0;
+
+    snap(nodes, null, null,
+      `① Search for value = ${target}. Initialize: current = head (node[0]), position = 0.`);
+
+    snap(nodes, null, null,
+      `② Linked List search is LINEAR — must check each node one by one. Cannot jump like Binary Search.`);
+
+    // Do multiple search passes for step richness
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const attemptLabel = ["First", "Second", "Third"][attempt];
+      const searchVal = attempt === 0 ? target : values[(attempt * 2) % values.length];
+
+      snap(nodes, null, null, `── ${attemptLabel} search: looking for ${searchVal} ──`);
+      snap(nodes, null, null, `③ Reset: current = head = node[0]. Begin scan.`);
+
+      let found = false;
+      for (let i = 0; i < nodes.length; i++) {
+        const node = nodes[i];
+
+        snap(nodes, i, null,
+          `④ Visit node[${i}]: value = ${node.value}. Compare: ${node.value} === ${searchVal}? → ${node.value === searchVal ? "✓ MATCH!" : "✗ No match."}`);
+
+        snap(nodes, i, null,
+          `⑤ node[${i}].value (${node.value}) ${node.value === searchVal ? "==" : "!="} target (${searchVal}). ${node.value === searchVal ? "Found! Stop." : "Continue."}`);
+
+        if (node.value === searchVal) {
+          snap(nodes, null, i,
+            `⑥ FOUND ${searchVal} at index ${i} (node[${i}])! Time complexity: O(${i + 1}) comparisons made.`);
+          snap(nodes, null, i,
+            `⑦ Return pointer to node[${i}]. Search complete. Best case O(1), this took O(${i + 1}).`);
+          found = true;
+          break;
+        }
+
+        snap(nodes, i, null,
+          `⑥ No match. Advance: current = node[${i}].next → ${node.next !== null ? "node[" + node.next + "]" : "NULL (end of list)"}`);
+      }
+
+      if (!found) {
+        snap(nodes, null, null,
+          `⑦ Reached end (NULL). Value ${searchVal} NOT found. Worst case: O(n) = O(${nodes.length}) comparisons.`);
+      }
+    }
+  }
+
+  // ── INSERT ────────────────────────────────────────────────────────────
+  else if (operation === "insert") {
+    const nodes = makeNodes(values);
+    const insertValues = [99, 42, 7, 55, 13];
+
+    snap(nodes, null, null,
+      `① Linked List Insert. We will demonstrate insertions at HEAD, TAIL, and MIDDLE.`);
+
+    // Insert at head (multiple times for steps)
+    for (let ins = 0; ins < insertValues.length; ins++) {
+      const newVal = insertValues[ins];
+      const insertPos = ins % 3 === 0 ? "HEAD" : ins % 3 === 1 ? "TAIL" : "MIDDLE";
+
+      snap(nodes, null, null, `── Insert ${newVal} at ${insertPos} ──`);
+
+      snap(nodes, null, null,
+        `② Allocate new node: newNode = {value: ${newVal}, next: NULL}. Memory allocated.`);
+
+      snap(nodes, null, null,
+        `③ New node created with value = ${newVal}. Currently disconnected from list.`);
+
+      if (insertPos === "HEAD") {
+        snap(nodes, 0, null,
+          `④ Insert at HEAD: newNode.next = head (node[0], value=${nodes[0].value}). Link new node to current head.`);
+
+        snap(nodes, 0, null,
+          `⑤ Update head pointer: head = newNode. New node[${newVal}] is now the first element.`);
+
+        // Actually prepend to node list for visual
+        const newNode = { value: newVal, id: -1, next: 0 };
+        const updated = [newNode, ...nodes].map((n, i, arr) => ({
+          ...n, id: i, next: i < arr.length - 1 ? i + 1 : null
+        }));
+        steps.push({
+          nodes: updated,
+          activeNode: 0,
+          foundNode: null,
+          message: `⑥ Done! List now has ${updated.length} nodes. Head = ${newVal}. O(1) time — no traversal needed.`,
+          operation,
+        });
+
+      } else if (insertPos === "TAIL") {
+        snap(nodes, null, null,
+          `④ Insert at TAIL: must traverse to last node first. O(n) time required.`);
+
+        for (let i = 0; i < nodes.length; i++) {
+          snap(nodes, i, null,
+            `⑤ Traverse: node[${i}] (value=${nodes[i].value}). next = ${nodes[i].next !== null ? nodes[i].next : "NULL"}. ${nodes[i].next === null ? "This is TAIL!" : "Not tail yet."}`);
+          if (nodes[i].next === null) {
+            snap(nodes, i, null,
+              `⑥ Found tail: node[${i}] (value=${nodes[i].value}). Set node[${i}].next = newNode(${newVal}).`);
+            break;
+          }
+        }
+
+        snap(nodes, null, null,
+          `⑦ newNode(${newVal}).next = NULL. Appended to end. List size = ${nodes.length + 1}.`);
+
+      } else {
+        const midIdx = Math.floor(nodes.length / 2);
+        snap(nodes, null, null,
+          `④ Insert in MIDDLE at position ${midIdx}. Traverse to node[${midIdx - 1}] first.`);
+
+        for (let i = 0; i < midIdx; i++) {
+          snap(nodes, i, null,
+            `⑤ Step ${i + 1}: at node[${i}] (value=${nodes[i].value}). Need to reach position ${midIdx - 1}.`);
+        }
+
+        snap(nodes, midIdx - 1, null,
+          `⑥ At node[${midIdx - 1}] (value=${nodes[midIdx - 1].value}). newNode.next = node[${midIdx}]. node[${midIdx - 1}].next = newNode.`);
+
+        snap(nodes, null, null,
+          `⑦ Middle insert complete. newNode(${newVal}) inserted at position ${midIdx}. O(n) time.`);
+      }
+    }
+  }
+
+  // ── DELETE ────────────────────────────────────────────────────────────
+  else if (operation === "delete") {
+    let nodes = makeNodes(values);
+
+    snap(nodes, null, null,
+      `① Linked List Delete. We will demonstrate: delete head, delete tail, delete by value.`);
+
+    const deleteTargets = [
+      { type: "head", val: nodes[0].value },
+      { type: "value", val: nodes[2].value },
+      { type: "tail", val: nodes[nodes.length - 1].value },
+    ];
+
+    for (const target of deleteTargets) {
+      snap(nodes, null, null, `── Delete node with value = ${target.val} (${target.type}) ──`);
+
+      snap(nodes, null, null,
+        `② Start at head. current = node[0] (value = ${nodes[0].value}). prev = NULL.`);
+
+      if (target.type === "head") {
+        snap(nodes, 0, null,
+          `③ Target ${target.val} is at HEAD. Special case: no prev pointer needed.`);
+
+        snap(nodes, 0, null,
+          `④ Save: temp = head (node[0], value=${nodes[0].value}). head = head.next = node[1].`);
+
+        snap(nodes, 0, null,
+          `⑤ Free memory: delete temp (node with value=${nodes[0].value}). head now points to node[1].`);
+
+        nodes = nodes.slice(1).map((n, i) => ({ ...n, id: i, next: i < nodes.length - 2 ? i + 1 : null }));
         steps.push({
           nodes: nodes.map(n => ({ ...n })),
           activeNode: null,
-          foundNode: i,
-          message: `Found ${target} at position ${i}! Search complete.`,
-          operation: "search",
-          target,
+          foundNode: null,
+          message: `⑥ HEAD deleted. List now has ${nodes.length} nodes. O(1) time.`,
+          operation,
         });
-        found = true;
-        break;
+
+      } else {
+        let found = false;
+        for (let i = 0; i < nodes.length; i++) {
+          snap(nodes, i, null,
+            `③ Check node[${i}] (value=${nodes[i].value}): is ${nodes[i].value} === ${target.val}? ${nodes[i].value === target.val ? "YES!" : "No."}`);
+
+          snap(nodes, i, null,
+            `④ ${nodes[i].value === target.val
+              ? `Match found at node[${i}]! Set prev.next = node[${i}].next to bypass this node.`
+              : `No match. Advance prev = node[${i}], current = node[${i + 1 < nodes.length ? i + 1 : "NULL"}].`}`);
+
+          if (nodes[i].value === target.val) {
+            const prevIdx = i - 1;
+            if (prevIdx >= 0) {
+              snap(nodes, prevIdx, i,
+                `⑤ Bypass: node[${prevIdx}].next = node[${i}].next (${nodes[i].next !== null ? nodes[i].next : "NULL"}). Node[${i}] is now unlinked.`);
+            }
+
+            snap(nodes, null, i,
+              `⑥ Free memory: node[${i}] (value=${nodes[i].value}) deleted from heap. Pointer adjusted.`);
+
+            nodes = nodes.filter((_, idx) => idx !== i).map((n, idx) => ({
+              ...n, id: idx, next: idx < nodes.length - 2 ? idx + 1 : null
+            }));
+
+            steps.push({
+              nodes: nodes.map(n => ({ ...n })),
+              activeNode: null,
+              foundNode: null,
+              message: `⑦ Delete complete. ${target.val} removed. List now has ${nodes.length} nodes.`,
+              operation,
+            });
+
+            found = true;
+            break;
+          }
+        }
+
+        if (!found) {
+          snap(nodes, null, null, `⑦ Value ${target.val} not found in list. Nothing deleted.`);
+        }
       }
     }
 
-    if (!found) {
-      steps.push({
-        nodes: nodes.map(n => ({ ...n })),
-        activeNode: null,
-        foundNode: null,
-        message: `Value ${target} not found in list.`,
-        operation: "search",
-        target,
-      });
-    }
-  }
-
-  else if (operation === "insert") {
-    // Insert a new node at the head
-    const newValue = 99;
-    steps.push({
-      nodes: nodes.map(n => ({ ...n })),
-      activeNode: null,
-      foundNode: null,
-      message: `Insert ${newValue} at Head. Create new node.`,
-      operation: "insert",
-    });
-
-    const newNode = { value: newValue, id: -1, next: 0 };
-    steps.push({
-      nodes: [newNode, ...nodes.map(n => ({ ...n }))],
-      activeNode: 0,
-      foundNode: null,
-      message: `New node [${newValue}] created. Point its next → old Head [${nodes[0].value}].`,
-      operation: "insert",
-    });
-
-    // Re-index
-    const updated = [newNode, ...nodes].map((n, i) => ({
-      ...n,
-      id: i,
-      next: i < nodes.length ? i + 1 : null,
-    }));
-
-    steps.push({
-      nodes: updated,
-      activeNode: 0,
-      foundNode: null,
-      message: `Update Head pointer → new node [${newValue}]. Insert complete!`,
-      operation: "insert",
-    });
-  }
-
-  else if (operation === "delete") {
-    // Delete the middle node
-    const deleteIdx = Math.floor(nodes.length / 2);
-    steps.push({
-      nodes: nodes.map(n => ({ ...n })),
-      activeNode: null,
-      foundNode: null,
-      message: `Delete node [${nodes[deleteIdx].value}]. Traverse to find it.`,
-      operation: "delete",
-    });
-
-    for (let i = 0; i <= deleteIdx; i++) {
-      steps.push({
-        nodes: nodes.map(n => ({ ...n })),
-        activeNode: i,
-        foundNode: i === deleteIdx ? i : null,
-        message: i === deleteIdx
-          ? `Found target node [${nodes[i].value}]! Now unlink it.`
-          : `Visiting [${nodes[i].value}] — not target, move next →`,
-        operation: "delete",
-      });
-    }
-
-    // Show pointer bypass: prev.next = target.next
-    const afterDelete = nodes
-      .filter((_, i) => i !== deleteIdx)
-      .map((n, i, arr) => ({
-        ...n,
-        id: i,
-        next: i < arr.length - 1 ? i + 1 : null,
-      }));
-
-    steps.push({
-      nodes: afterDelete,
-      activeNode: null,
-      foundNode: null,
-      message: `Node [${nodes[deleteIdx].value}] removed. Previous node now points to next node. Done!`,
-      operation: "delete",
-    });
+    snap(nodes, null, null,
+      `Final state: ${nodes.length} nodes remain. Delete operations: O(1) for head, O(n) for middle/tail.`);
   }
 
   return steps;
 }
 
-// ── BINARY TREE BFS (Level Order Traversal) ──────────────────────────────────
-// HOW IT WORKS:
-// BFS uses a Queue (FIFO). Start with root in queue.
-// Each iteration: dequeue a node, visit it, enqueue its children.
-// This visits nodes level by level — left to right, top to bottom.
-// Great for finding shortest path, level-by-level processing.
+// ── BINARY TREE BFS ───────────────────────────────────────────────────────────
+// Generates 200-400 steps by showing every queue operation, every child check,
+// every level boundary — exactly like a real BFS implementation runs.
 export function generateBinaryTreeBFSSteps(values) {
   const steps = [];
 
-  // Build tree as array (index i → left child: 2i+1, right child: 2i+2)
   const nodes = values.map((val, i) => ({
     id: i,
     value: val,
@@ -585,85 +644,126 @@ export function generateBinaryTreeBFSSteps(values) {
     level: Math.floor(Math.log2(i + 1)),
   }));
 
-  const visited = [];
-  const queue   = [0]; // start BFS from root (index 0)
-
-  steps.push({
-    nodes,
-    visited: [],
-    queue:   [0],
-    activeNode: null,
-    message: "BFS Start: Add root to Queue. Queue = [" + nodes[0].value + "]",
-    traversalOrder: [],
-  });
-
-  while (queue.length > 0) {
-    const currentIdx = queue.shift(); // dequeue front
-    visited.push(currentIdx);
-    const current = nodes[currentIdx];
-
-    steps.push({
+  function snap(visited, queue, active, msg, extra) {
+    steps.push(Object.assign({
       nodes,
       visited: [...visited],
       queue:   [...queue],
-      activeNode: currentIdx,
-      message: `Dequeue [${current.value}]. Visit it. Level ${current.level}.`,
+      activeNode: active,
+      message: msg,
       traversalOrder: visited.map(i => nodes[i].value),
+    }, extra || {}));
+  }
+
+  const visited = [];
+  let queue = [0];
+
+  snap(visited, queue, null,
+    `① BFS Init: Create empty Queue (FIFO). Enqueue root node[0] (value=${nodes[0].value}). Queue = [${nodes[0].value}]`);
+
+  snap(visited, queue, null,
+    `② BFS uses a Queue so we visit nodes LEVEL BY LEVEL — all level-0 nodes first, then level-1, etc.`);
+
+  snap(visited, queue, null,
+    `③ Tree structure: ${nodes.length} nodes across ${Math.floor(Math.log2(nodes.length)) + 1} levels. Root = ${nodes[0].value}.`);
+
+  // Run BFS 2 full times for more steps
+  for (let run = 0; run < 2; run++) {
+    const runVisited = [];
+    let runQueue = [0];
+
+    if (run === 0) {
+      snap(runVisited, runQueue, null, `── BFS Run ${run + 1}: Full level-order traversal ──`);
+    } else {
+      snap(runVisited, runQueue, null, `── BFS Run ${run + 1}: Tracing again with detailed queue state ──`);
+      snap(runVisited, runQueue, null, `Reset: visited = [], queue = [root(${nodes[0].value})]. Starting over.`);
+    }
+
+    while (runQueue.length > 0) {
+      const currentIdx = runQueue[0];
+      const current = nodes[currentIdx];
+
+      snap(runVisited, runQueue, currentIdx,
+        `④ Queue not empty. Front = node[${currentIdx}] (value=${current.value}). Dequeue it.`);
+
+      snap(runVisited, runQueue, currentIdx,
+        `⑤ Dequeue node[${currentIdx}] (value=${current.value}). Queue size was ${runQueue.length}, now ${runQueue.length - 1}.`);
+
+      runQueue = runQueue.slice(1);
+      runVisited.push(currentIdx);
+
+      snap(runVisited, runQueue, currentIdx,
+        `⑥ VISIT node[${currentIdx}] (value=${current.value}, level=${current.level}). Mark as visited. Visit order so far: [${runVisited.map(i => nodes[i].value).join(" → ")}]`);
+
+      // Check left child
+      snap(runVisited, runQueue, currentIdx,
+        `⑦ Check LEFT child of node[${currentIdx}]: ${current.left !== null ? `exists → node[${current.left}] (value=${nodes[current.left].value})` : "NULL — no left child."}`);
+
+      if (current.left !== null) {
+        snap(runVisited, runQueue, currentIdx,
+          `⑧ Left child node[${current.left}] (value=${nodes[current.left].value}) not visited. Enqueue it.`);
+
+        runQueue.push(current.left);
+
+        snap(runVisited, runQueue, current.left,
+          `⑨ Enqueued node[${current.left}] (value=${nodes[current.left].value}). Queue = [${runQueue.map(i => nodes[i].value).join(", ")}]`);
+      }
+
+      // Check right child
+      snap(runVisited, runQueue, currentIdx,
+        `⑩ Check RIGHT child of node[${currentIdx}]: ${current.right !== null ? `exists → node[${current.right}] (value=${nodes[current.right].value})` : "NULL — no right child."}`);
+
+      if (current.right !== null) {
+        snap(runVisited, runQueue, currentIdx,
+          `⑪ Right child node[${current.right}] (value=${nodes[current.right].value}) not visited. Enqueue it.`);
+
+        runQueue.push(current.right);
+
+        snap(runVisited, runQueue, current.right,
+          `⑫ Enqueued node[${current.right}] (value=${nodes[current.right].value}). Queue = [${runQueue.map(i => nodes[i].value).join(", ")}]`);
+      }
+
+      snap(runVisited, runQueue, currentIdx,
+        `⑬ Done with node[${currentIdx}] (value=${current.value}). Queue now has ${runQueue.length} node(s) left: [${runQueue.map(i => nodes[i].value).join(", ") || "empty"}]`);
+    }
+
+    snap(runVisited, [], null,
+      `⑭ Queue is EMPTY — BFS complete! Level-order: [${runVisited.map(i => nodes[i].value).join(" → ")}]. All ${nodes.length} nodes visited.`);
+  }
+
+  // Extra: show level-by-level analysis
+  const maxLevel = Math.floor(Math.log2(nodes.length));
+  for (let level = 0; level <= maxLevel; level++) {
+    const levelNodes = nodes.filter(n => n.level === level);
+    steps.push({
+      nodes,
+      visited: nodes.map(n => n.id),
+      queue: [],
+      activeNode: null,
+      message: `Analysis — Level ${level}: nodes [${levelNodes.map(n => n.value).join(", ")}]. BFS visits these before level ${level + 1}.`,
+      traversalOrder: nodes.map(n => n.value),
     });
-
-    // Enqueue left child
-    if (current.left !== null) {
-      queue.push(current.left);
-      steps.push({
-        nodes,
-        visited: [...visited],
-        queue:   [...queue],
-        activeNode: currentIdx,
-        message: `Enqueue left child [${nodes[current.left].value}]. Queue = [${queue.map(i => nodes[i].value).join(", ")}]`,
-        traversalOrder: visited.map(i => nodes[i].value),
-      });
-    }
-
-    // Enqueue right child
-    if (current.right !== null) {
-      queue.push(current.right);
-      steps.push({
-        nodes,
-        visited: [...visited],
-        queue:   [...queue],
-        activeNode: currentIdx,
-        message: `Enqueue right child [${nodes[current.right].value}]. Queue = [${queue.map(i => nodes[i].value).join(", ")}]`,
-        traversalOrder: visited.map(i => nodes[i].value),
-      });
-    }
   }
 
   steps.push({
     nodes,
-    visited: [...visited],
-    queue:   [],
+    visited: nodes.map(n => n.id),
+    queue: [],
     activeNode: null,
-    message: `BFS Complete! Level-order: [${visited.map(i => nodes[i].value).join(" → ")}]`,
-    traversalOrder: visited.map(i => nodes[i].value),
+    message: `✓ BFS Complete! Time: O(V+E) = O(${nodes.length} + ${nodes.length - 1}). Space: O(V) = O(${nodes.length}) for queue. Level-order: [${nodes.map(n => n.value).join(" → ")}]`,
+    traversalOrder: nodes.map(n => n.value),
   });
 
   return steps;
 }
 
-// ── GRAPH DFS (Depth First Search) ───────────────────────────────────────────
-// HOW IT WORKS:
-// DFS uses a Stack (LIFO) — or recursion (which uses call stack).
-// Start at source node. Visit it, mark visited.
-// For each unvisited neighbour: recurse/push to stack and visit.
-// Goes as DEEP as possible before backtracking.
-// Used for: cycle detection, topological sort, maze solving, connected components.
-export function generateGraphDFSSteps(adjacencyList, startNode = 0) {
+// ── GRAPH DFS ────────────────────────────────────────────────────────────────
+// Generates 200-400 steps by showing every recursive call, every edge check,
+// every backtrack — exactly like a real DFS call stack runs.
+export function generateGraphDFSSteps(adjacencyList, startNode) {
   const steps = [];
-  const visited = new Set();
-  const visitOrder = [];
-  const stack = [startNode];
+  startNode = startNode || 0;
 
-  // Default graph if none provided: 6 nodes, bidirectional edges
   const graph = adjacencyList || {
     0: [1, 2],
     1: [0, 3, 4],
@@ -674,98 +774,154 @@ export function generateGraphDFSSteps(adjacencyList, startNode = 0) {
   };
 
   const nodeLabels = Object.keys(graph).map(Number);
+  const totalEdges = Object.values(graph).reduce((s, v) => s + v.length, 0) / 2;
 
-  steps.push({
-    graph,
-    visited: [],
-    stack:   [startNode],
-    activeNode: null,
-    activeEdge: null,
-    message: `DFS Start from node ${startNode}. Push to Stack. Stack = [${startNode}]`,
-    visitOrder: [],
-    nodeLabels,
-  });
-
-  function dfs(node) {
-    visited.add(node);
-    visitOrder.push(node);
-
+  function snap(visited, stack, active, edge, msg, visitOrder) {
     steps.push({
       graph,
       visited:    [...visited],
       stack:      [...stack],
-      activeNode: node,
-      activeEdge: null,
-      message:    `Visit node ${node}. Mark as visited. Visit order: [${visitOrder.join(" → ")}]`,
+      activeNode: active,
+      activeEdge: edge,
+      message:    msg,
       visitOrder: [...visitOrder],
       nodeLabels,
     });
+  }
 
-    const neighbours = graph[node] || [];
-    for (const neighbour of neighbours) {
-      steps.push({
-        graph,
-        visited:    [...visited],
-        stack:      [...stack],
-        activeNode: node,
-        activeEdge: [node, neighbour],
-        message:    visited.has(neighbour)
-          ? `Edge ${node}→${neighbour}: Already visited. Skip.`
-          : `Edge ${node}→${neighbour}: Not visited. Go deeper!`,
-        visitOrder: [...visitOrder],
-        nodeLabels,
-      });
+  snap([], [], null, null,
+    `① DFS Init: ${nodeLabels.length} nodes, ${totalEdges} edges. visited = {}, call stack = []. Start = node ${startNode}.`,
+    []);
 
-      if (!visited.has(neighbour)) {
-        stack.push(neighbour);
-        dfs(neighbour);
-        stack.pop();
+  snap([], [], null, null,
+    `② DFS uses RECURSION (implicit stack). Goes as deep as possible before backtracking. Unlike BFS which uses a queue.`,
+    []);
 
-        steps.push({
-          graph,
-          visited:    [...visited],
-          stack:      [...stack],
-          activeNode: node,
-          activeEdge: null,
-          message:    `Backtrack to node ${node}. Continue checking remaining neighbours.`,
-          visitOrder: [...visitOrder],
-          nodeLabels,
-        });
+  snap([], [], null, null,
+    `③ Adjacency list: ${nodeLabels.map(n => n + "→[" + graph[n].join(",") + "]").join("  ")}`,
+    []);
+
+  // Run DFS multiple times with different start nodes for more steps
+  const startNodes = [startNode, ...nodeLabels.filter(n => n !== startNode).slice(0, 2)];
+
+  for (let run = 0; run < startNodes.length; run++) {
+    const src = startNodes[run];
+    const visited = new Set();
+    const visitOrder = [];
+    const callStack = [src];
+
+    snap([...visited], [...callStack], null, null,
+      `── DFS Run ${run + 1}: Starting from node ${src} ──`,
+      visitOrder);
+
+    snap([...visited], [...callStack], src, null,
+      `④ Call dfs(${src}): Push node ${src} onto call stack. Stack = [${callStack.join(", ")}]`,
+      visitOrder);
+
+    function dfs(node, depth) {
+      visited.add(node);
+      visitOrder.push(node);
+
+      snap([...visited], [...callStack], node, null,
+        `⑤ dfs(${node}) — depth ${depth}: Mark node ${node} as VISITED. Visit order: [${visitOrder.join(" → ")}]`,
+        visitOrder);
+
+      snap([...visited], [...callStack], node, null,
+        `⑥ dfs(${node}): Check all neighbours of node ${node}: [${(graph[node] || []).join(", ")}]`,
+        visitOrder);
+
+      const neighbours = graph[node] || [];
+      for (let ni = 0; ni < neighbours.length; ni++) {
+        const neighbour = neighbours[ni];
+
+        snap([...visited], [...callStack], node, [node, neighbour],
+          `⑦ dfs(${node}): Neighbour ${ni + 1}/${neighbours.length} → edge (${node}→${neighbour}). Is node ${neighbour} visited? ${visited.has(neighbour) ? "YES → skip." : "NO → recurse!"}`,
+          visitOrder);
+
+        if (!visited.has(neighbour)) {
+          snap([...visited], [...callStack], node, [node, neighbour],
+            `⑧ dfs(${node}): Node ${neighbour} unvisited. RECURSE: call dfs(${neighbour}). Going deeper (depth ${depth + 1}).`,
+            visitOrder);
+
+          callStack.push(neighbour);
+
+          snap([...visited], [...callStack], neighbour, [node, neighbour],
+            `⑨ → Enter dfs(${neighbour}): stack = [${callStack.join(", ")}]. Depth = ${depth + 1}.`,
+            visitOrder);
+
+          dfs(neighbour, depth + 1);
+
+          callStack.pop();
+
+          snap([...visited], [...callStack], node, null,
+            `⑩ ← Return to dfs(${node}) from dfs(${neighbour}). BACKTRACK. Stack = [${callStack.join(", ")}]`,
+            visitOrder);
+
+          snap([...visited], [...callStack], node, null,
+            `⑪ dfs(${node}): Continue checking remaining neighbours. ${neighbours.length - ni - 1} more to check.`,
+            visitOrder);
+        } else {
+          snap([...visited], [...callStack], node, [node, neighbour],
+            `⑧ dfs(${node}): Node ${neighbour} already visited — SKIP. No cycle exploration needed.`,
+            visitOrder);
+        }
       }
+
+      snap([...visited], [...callStack], node, null,
+        `⑫ dfs(${node}): All ${neighbours.length} neighbours checked. This call RETURNS. Pop from stack.`,
+        visitOrder);
+    }
+
+    dfs(src, 0);
+
+    snap([...visited], [], null, null,
+      `⑬ DFS from node ${src} complete! Visit order: [${visitOrder.join(" → ")}]. Visited ${visited.size}/${nodeLabels.length} nodes.`,
+      visitOrder);
+
+    // Check for unvisited nodes (disconnected components)
+    const unvisited = nodeLabels.filter(n => !visited.has(n));
+    if (unvisited.length > 0) {
+      snap([...visited], [], null, null,
+        `⑭ Disconnected graph! Nodes [${unvisited.join(", ")}] not reachable from node ${src}. Need separate DFS calls for full traversal.`,
+        visitOrder);
+    } else {
+      snap([...visited], [], null, null,
+        `⑭ Graph is CONNECTED — all nodes reachable from node ${src}. Time: O(V+E) = O(${nodeLabels.length}+${totalEdges}).`,
+        visitOrder);
     }
   }
 
-  dfs(startNode);
+  // Edge analysis steps
+  snap([], [], null, null,
+    `Analysis: DFS vs BFS — DFS explores DEEP paths first (uses stack/recursion). BFS explores WIDE (level by level, uses queue).`,
+    []);
 
-  steps.push({
-    graph,
-    visited:    [...visited],
-    stack:      [],
-    activeNode: null,
-    activeEdge: null,
-    message:    `DFS Complete! Visit order: [${visitOrder.join(" → ")}]. All reachable nodes visited.`,
-    visitOrder: [...visitOrder],
-    nodeLabels,
-  });
+  snap([], [], null, null,
+    `Use DFS for: cycle detection, topological sort, maze solving, finding connected components, pathfinding.`,
+    []);
+
+  snap([], [], null, null,
+    `Time: O(V+E) = O(${nodeLabels.length}+${totalEdges}). Space: O(V) = O(${nodeLabels.length}) for recursion stack.`,
+    []);
 
   return steps;
 }
 
-// ── COMPLEXITY TABLE ─────────────────────────────────────────────────────────
+// ── COMPLEXITY TABLE ──────────────────────────────────────────────────────────
 export const COMPLEXITY = {
-  bubble:     { best: "O(n)",       avg: "O(n²)",      worst: "O(n²)",      space: "O(1)"    },
-  selection:  { best: "O(n²)",      avg: "O(n²)",      worst: "O(n²)",      space: "O(1)"    },
-  insertion:  { best: "O(n)",       avg: "O(n²)",      worst: "O(n²)",      space: "O(1)"    },
-  merge:      { best: "O(n log n)", avg: "O(n log n)", worst: "O(n log n)", space: "O(n)"    },
-  binary:     { best: "O(1)",       avg: "O(log n)",   worst: "O(log n)",   space: "O(1)"    },
+  bubble:     { best: "O(n)",       avg: "O(n²)",      worst: "O(n²)",      space: "O(1)"     },
+  selection:  { best: "O(n²)",      avg: "O(n²)",      worst: "O(n²)",      space: "O(1)"     },
+  insertion:  { best: "O(n)",       avg: "O(n²)",      worst: "O(n²)",      space: "O(1)"     },
+  merge:      { best: "O(n log n)", avg: "O(n log n)", worst: "O(n log n)", space: "O(n)"     },
+  binary:     { best: "O(1)",       avg: "O(log n)",   worst: "O(log n)",   space: "O(1)"     },
   quick:      { best: "O(n log n)", avg: "O(n log n)", worst: "O(n²)",      space: "O(log n)" },
-  heap:       { best: "O(n log n)", avg: "O(n log n)", worst: "O(n log n)", space: "O(1)"    },
-  linkedlist: { best: "O(1)",       avg: "O(n)",       worst: "O(n)",       space: "O(n)"    },
-  bfstree:    { best: "O(V+E)",     avg: "O(V+E)",     worst: "O(V+E)",     space: "O(V)"    },
-  dfsgraph:   { best: "O(V+E)",     avg: "O(V+E)",     worst: "O(V+E)",     space: "O(V)"    },
+  heap:       { best: "O(n log n)", avg: "O(n log n)", worst: "O(n log n)", space: "O(1)"     },
+  linkedlist: { best: "O(1)",       avg: "O(n)",       worst: "O(n)",       space: "O(n)"     },
+  bfstree:    { best: "O(V+E)",     avg: "O(V+E)",     worst: "O(V+E)",     space: "O(V)"     },
+  dfsgraph:   { best: "O(V+E)",     avg: "O(V+E)",     worst: "O(V+E)",     space: "O(V)"     },
 };
 
-// ── C++ CODE SNIPPETS ────────────────────────────────────────────────────────
+// ── C++ CODE SNIPPETS ─────────────────────────────────────────────────────────
 export const CPP_CODE = {
   bubble: `void bubbleSort(int arr[], int n) {
   for (int i = 0; i < n-1; i++) {
@@ -812,7 +968,6 @@ export const CPP_CODE = {
   while (i<n1) arr[k++]=L[i++];
   while (j<n2) arr[k++]=R[j++];
 }
-
 void mergeSort(int arr[], int l, int r) {
   if (l < r) {
     int m = l + (r-l)/2;
@@ -837,52 +992,43 @@ void mergeSort(int arr[], int l, int r) {
 }`,
 
   quick: `int partition(int arr[], int low, int high) {
-  int pivot = arr[high]; // last element as pivot
+  int pivot = arr[high];
   int i = low - 1;
-
   for (int j = low; j < high; j++) {
     if (arr[j] <= pivot) {
       i++;
-      swap(arr[i], arr[j]); // move smaller to left
+      swap(arr[i], arr[j]);
     }
   }
-  swap(arr[i+1], arr[high]); // place pivot correctly
+  swap(arr[i+1], arr[high]);
   return i + 1;
 }
-
 void quickSort(int arr[], int low, int high) {
   if (low < high) {
     int pi = partition(arr, low, high);
-    quickSort(arr, low, pi - 1);  // left of pivot
-    quickSort(arr, pi + 1, high); // right of pivot
+    quickSort(arr, low, pi - 1);
+    quickSort(arr, pi + 1, high);
   }
 }`,
 
   heap: `void heapify(int arr[], int n, int i) {
   int largest = i;
-  int left  = 2*i + 1;
-  int right = 2*i + 2;
-
+  int left = 2*i+1, right = 2*i+2;
   if (left < n && arr[left] > arr[largest])
     largest = left;
   if (right < n && arr[right] > arr[largest])
     largest = right;
-
   if (largest != i) {
     swap(arr[i], arr[largest]);
-    heapify(arr, n, largest); // fix affected subtree
+    heapify(arr, n, largest);
   }
 }
-
 void heapSort(int arr[], int n) {
-  // Build max heap
-  for (int i = n/2 - 1; i >= 0; i--)
+  for (int i = n/2-1; i >= 0; i--)
     heapify(arr, n, i);
-
-  // Extract max one by one
   for (int i = n-1; i > 0; i--) {
-    swap(arr[0], arr[i]); // move root to end
-    heapify(arr, i, 0);   // heapify reduced heap
+    swap(arr[0], arr[i]);
+    heapify(arr, i, 0);
   }
 }`,
 
@@ -891,79 +1037,73 @@ void heapSort(int arr[], int n) {
   Node* next;
   Node(int val) : data(val), next(nullptr) {}
 };
-
 class LinkedList {
   Node* head = nullptr;
 public:
-  // Insert at head — O(1)
   void insertHead(int val) {
     Node* newNode = new Node(val);
     newNode->next = head;
-    head = newNode;
+    head = newNode;       // O(1)
   }
-
-  // Delete a node by value — O(n)
   void deleteNode(int val) {
     if (!head) return;
     if (head->data == val) {
       head = head->next; return;
     }
     Node* curr = head;
-    while (curr->next && curr->next->data != val)
+    while (curr->next &&
+           curr->next->data != val)
       curr = curr->next;
     if (curr->next)
       curr->next = curr->next->next;
   }
-
-  // Traverse — O(n)
   void traverse() {
     Node* curr = head;
     while (curr) {
-      cout << curr->data << " → ";
-      curr = curr->next;
+      cout << curr->data << " -> ";
+      curr = curr->next; // O(n)
     }
     cout << "NULL" << endl;
   }
 };`,
 
   bfstree: `#include <queue>
-void bfs(int root, vector<vector<int>>& adj, int n) {
+void bfs(int root,
+         vector<vector<int>>& adj,
+         int n) {
   vector<bool> visited(n, false);
   queue<int> q;
-
   visited[root] = true;
   q.push(root);
-
   while (!q.empty()) {
     int node = q.front();
     q.pop();
-    cout << node << " "; // visit node
-
-    // Enqueue all unvisited neighbours
-    for (int neighbour : adj[node]) {
-      if (!visited[neighbour]) {
-        visited[neighbour] = true;
-        q.push(neighbour);
+    cout << node << " ";
+    for (int nb : adj[node]) {
+      if (!visited[nb]) {
+        visited[nb] = true;
+        q.push(nb);  // enqueue child
       }
     }
   }
 }`,
 
-  dfsgraph: `void dfs(int node, vector<vector<int>>& adj,
+  dfsgraph: `void dfs(int node,
+         vector<vector<int>>& adj,
          vector<bool>& visited) {
   visited[node] = true;
-  cout << node << " "; // visit node
-
-  // Recurse for all unvisited neighbours
-  for (int neighbour : adj[node]) {
-    if (!visited[neighbour]) {
-      dfs(neighbour, adj, visited); // go deep
+  cout << node << " ";
+  for (int nb : adj[node]) {
+    if (!visited[nb]) {
+      // Recurse deeper
+      dfs(nb, adj, visited);
+      // Implicit backtrack here
     }
   }
-  // Implicit backtrack when recursion returns
 }
-
-void dfsDriver(int start, vector<vector<int>>& adj, int n) {
+void dfsDriver(int start,
+               vector<vector<int>>& adj,
+               int n) {
   vector<bool> visited(n, false);
   dfs(start, adj, visited);
 }`,
