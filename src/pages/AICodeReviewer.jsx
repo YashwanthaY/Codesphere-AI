@@ -1,5 +1,4 @@
 import { useState } from "react";
-import axios from "axios";
 import {
   Play, Code2, AlertTriangle, Lightbulb,
   CheckCircle, Star, RotateCcw, Clock,
@@ -72,15 +71,16 @@ function getSeverityColor(severity) {
 export default function AICodeReviewer() {
   const toast = useToast();
 
-  const [code, setCode]               = useState(SAMPLE_CODES.python);
-  const [language, setLanguage]       = useState("python");
-  const [loading, setLoading]         = useState(false);
-  const [review, setReview]           = useState(null);
-  const [error, setError]             = useState("");
+  const [code, setCode]                 = useState(SAMPLE_CODES.python);
+  const [language, setLanguage]         = useState("python");
+  const [loading, setLoading]           = useState(false);
+  const [review, setReview]             = useState(null);
+  const [error, setError]               = useState("");
   const [showImproved, setShowImproved] = useState(false);
-  const [copied, setCopied]           = useState(false);
-  const [history, setHistory]         = useLocalStorage("code-review-history", []);
+  const [copied, setCopied]             = useState(false);
+  const [history, setHistory]           = useLocalStorage("code-review-history", []);
 
+  // ✅ FIXED: Proper fetch() syntax — was mixing axios + fetch incorrectly
   async function handleReview() {
     if (!code.trim()) return;
     setLoading(true);
@@ -89,15 +89,25 @@ export default function AICodeReviewer() {
     setShowImproved(false);
 
     try {
-      const response = await axios.post(
-        "http://localhost:5000/api/review",
-        { code, language },
-        { timeout: 30000 }
-      );
-      const data = response.data;
+      const response = await fetch("http://localhost:5000/api/review", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code, language }),
+      });
+
+      // ✅ fetch() does NOT throw on 4xx/5xx — must check response.ok manually
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        const message = errData.error || `Server error (${response.status})`;
+        setError(message);
+        toast.error(message, { title: "API Error" });
+        return;
+      }
+
+      // ✅ fetch() returns a Response object — must call .json() to get data
+      const data = await response.json();
       setReview(data);
 
-      // ✅ Toast added here — after review data is received
       toast.xp(
         "Code scored " + data.score + "/10 — " + (data.bugs ? data.bugs.length : 0) + " issues found",
         { title: "Review Complete! +15 XP" }
@@ -114,15 +124,14 @@ export default function AICodeReviewer() {
       setHistory([historyItem, ...history].slice(0, 5));
 
     } catch (err) {
-      if (err.code === "ECONNREFUSED" || err.code === "ERR_NETWORK") {
+      // ✅ fetch() throws only on network failure (no internet / backend not running)
+      const isNetworkError =
+        err instanceof TypeError && err.message.toLowerCase().includes("fetch");
+
+      if (isNetworkError) {
         const msg = "Cannot connect to backend. Make sure Flask server is running on port 5000.";
         setError(msg);
-        // ✅ Toast added here — when network error occurs
         toast.error("Backend not running! Start Flask server.", { title: "Connection Error" });
-      } else if (err.response && err.response.data && err.response.data.error) {
-        setError(err.response.data.error);
-        // ✅ Toast added here — when API returns error
-        toast.error(err.response.data.error, { title: "API Error" });
       } else {
         setError("Something went wrong. Please try again.");
         toast.error("Something went wrong. Please try again.", { title: "Error" });
@@ -136,7 +145,6 @@ export default function AICodeReviewer() {
     if (!review || !review.improved_code) return;
     await navigator.clipboard.writeText(review.improved_code);
     setCopied(true);
-    // ✅ Toast added here — when code is copied
     toast.success("Improved code copied to clipboard!", { title: "Copied ✓" });
     setTimeout(function() { setCopied(false); }, 2000);
   }
@@ -154,7 +162,7 @@ export default function AICodeReviewer() {
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
 
-        {/* Left — Editor */}
+        {/* ── Left — Editor ── */}
         <div className="xl:col-span-2 space-y-4">
 
           {/* Language selector */}
@@ -167,6 +175,7 @@ export default function AICodeReviewer() {
                     setLanguage(lang.id);
                     if (SAMPLE_CODES[lang.id]) setCode(SAMPLE_CODES[lang.id]);
                     setReview(null);
+                    setError("");
                   }}
                   className={"flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm border transition-all " +
                     (language === lang.id
@@ -187,7 +196,7 @@ export default function AICodeReviewer() {
                 {language} · {code.split("\n").length} lines
               </span>
               <button
-                onClick={function() { setCode(""); }}
+                onClick={function() { setCode(""); setReview(null); setError(""); }}
                 className="text-xs text-slate-600 hover:text-slate-400 transition-colors"
               >
                 Clear
@@ -257,7 +266,9 @@ export default function AICodeReviewer() {
                   <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
                     <AlertTriangle size={15} className="text-red-400" />
                     Issues Found
-                    <span className="text-xs bg-red-500/15 text-red-400 px-2 py-0.5 rounded-full">{review.bugs.length}</span>
+                    <span className="text-xs bg-red-500/15 text-red-400 px-2 py-0.5 rounded-full">
+                      {review.bugs.length}
+                    </span>
                   </h3>
                   <div className="space-y-2">
                     {review.bugs.map(function(bug, i) {
@@ -330,7 +341,9 @@ export default function AICodeReviewer() {
                       <Code2 size={15} className="text-blue-400" />
                       Improved Code
                     </span>
-                    {showImproved ? <ChevronUp size={16} className="text-slate-400" /> : <ChevronDown size={16} className="text-slate-400" />}
+                    {showImproved
+                      ? <ChevronUp size={16} className="text-slate-400" />
+                      : <ChevronDown size={16} className="text-slate-400" />}
                   </button>
                   {showImproved && (
                     <>
@@ -341,8 +354,7 @@ export default function AICodeReviewer() {
                         >
                           {copied
                             ? <><Check size={12} className="text-emerald-400" /> Copied!</>
-                            : <><Copy size={12} /> Copy code</>
-                          }
+                            : <><Copy size={12} /> Copy code</>}
                         </button>
                       </div>
                       <pre className="p-4 text-sm font-mono text-slate-300 overflow-x-auto leading-relaxed bg-slate-950">
@@ -352,12 +364,15 @@ export default function AICodeReviewer() {
                   )}
                 </div>
               )}
+
             </div>
           )}
         </div>
 
-        {/* Right — History */}
+        {/* ── Right — Sidebar ── */}
         <div className="space-y-4">
+
+          {/* How it works */}
           <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
             <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
               <Star size={14} className="text-amber-400" />
@@ -365,10 +380,10 @@ export default function AICodeReviewer() {
             </h3>
             <div className="space-y-3">
               {[
-                { step: "1", text: "Paste your code in any language"               },
-                { step: "2", text: "Select the programming language"               },
-                { step: "3", text: "Click Review with AI"                          },
-                { step: "4", text: "Get score, bugs, suggestions & improved code"  },
+                { step: "1", text: "Paste your code in any language"              },
+                { step: "2", text: "Select the programming language"              },
+                { step: "3", text: "Click Review with AI"                         },
+                { step: "4", text: "Get score, bugs, suggestions & improved code" },
               ].map(function(item) {
                 return (
                   <div key={item.step} className="flex gap-3 items-start">
@@ -382,6 +397,7 @@ export default function AICodeReviewer() {
             </div>
           </div>
 
+          {/* Recent Reviews */}
           <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
             <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
               <Clock size={14} className="text-slate-400" />
@@ -408,6 +424,7 @@ export default function AICodeReviewer() {
             )}
           </div>
 
+          {/* Tips */}
           <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
             <h3 className="text-sm font-semibold text-white mb-3">💡 Tips</h3>
             <ul className="space-y-2 text-xs text-slate-400">
@@ -417,6 +434,7 @@ export default function AICodeReviewer() {
               <li>→ Powered by Google Gemini AI</li>
             </ul>
           </div>
+
         </div>
       </div>
     </div>

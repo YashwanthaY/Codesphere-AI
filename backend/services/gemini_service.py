@@ -1,5 +1,6 @@
 import os
 import json
+import time
 import google.generativeai as genai
 from dotenv import load_dotenv
 
@@ -7,6 +8,38 @@ load_dotenv()
 
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 model = genai.GenerativeModel("gemini-2.0-flash")
+
+
+def call_gemini_with_retry(prompt: str, retries: int = 3, wait: int = 15) -> str:
+    """Call Gemini API with automatic retry on 429 rate limit errors."""
+    for attempt in range(retries):
+        try:
+            response = model.generate_content(prompt)
+            return response.text.strip()
+        except Exception as e:
+            error_str = str(e)
+            if "429" in error_str or "quota" in error_str.lower():
+                if attempt < retries - 1:
+                    print(f"[Gemini] Rate limited. Waiting {wait}s before retry {attempt + 2}/{retries}...")
+                    time.sleep(wait)
+                else:
+                    raise Exception(
+                        "Gemini API rate limit reached. You are on the free tier (15 requests/min). "
+                        "Please wait 1 minute and try again."
+                    )
+            else:
+                raise e
+
+
+def clean_json_response(text: str) -> dict:
+    """Strip markdown fences and parse JSON safely."""
+    if text.startswith("```json"):
+        text = text[7:]
+    if text.startswith("```"):
+        text = text[3:]
+    if text.endswith("```"):
+        text = text[:-3]
+    return json.loads(text.strip())
 
 
 def review_code(code: str, language: str) -> dict:
@@ -38,23 +71,13 @@ Respond ONLY with a valid JSON object (no markdown, no extra text) in this exact
 }}
 """
     try:
-        response = model.generate_content(prompt)
-        text = response.text.strip()
-
-        if text.startswith("```json"):
-            text = text[7:]
-        if text.startswith("```"):
-            text = text[3:]
-        if text.endswith("```"):
-            text = text[:-3]
-
-        result = json.loads(text.strip())
+        text = call_gemini_with_retry(prompt)
+        result = clean_json_response(text)
         return {"success": True, "data": result}
-
     except json.JSONDecodeError as e:
         return {"success": False, "error": f"Failed to parse AI response: {str(e)}"}
     except Exception as e:
-        return {"success": False, "error": f"Gemini API error: {str(e)}"}
+        return {"success": False, "error": str(e)}
 
 
 def generate_interview_question(topic: str, difficulty: str) -> dict:
@@ -70,19 +93,9 @@ Respond ONLY with valid JSON in this exact format:
 }}
 """
     try:
-        response = model.generate_content(prompt)
-        text = response.text.strip()
-
-        if text.startswith("```json"):
-            text = text[7:]
-        if text.startswith("```"):
-            text = text[3:]
-        if text.endswith("```"):
-            text = text[:-3]
-
-        result = json.loads(text.strip())
+        text = call_gemini_with_retry(prompt)
+        result = clean_json_response(text)
         return {"success": True, "data": result}
-
     except Exception as e:
         return {"success": False, "error": str(e)}
 
@@ -105,18 +118,8 @@ Respond ONLY with valid JSON in this exact format:
 }}
 """
     try:
-        response = model.generate_content(prompt)
-        text = response.text.strip()
-
-        if text.startswith("```json"):
-            text = text[7:]
-        if text.startswith("```"):
-            text = text[3:]
-        if text.endswith("```"):
-            text = text[:-3]
-
-        result = json.loads(text.strip())
+        text = call_gemini_with_retry(prompt)
+        result = clean_json_response(text)
         return {"success": True, "data": result}
-
     except Exception as e:
         return {"success": False, "error": str(e)}
