@@ -14,6 +14,7 @@ import AnalyticsDashboard from "./pages/AnalyticsDashboard"
 import InterviewCoach from "./pages/InterviewCoach"
 import PortfolioGenerator from "./pages/PortfolioGenerator"
 import Leaderboard from "./pages/Leaderboard"
+import AIChatAssistant from "./components/AIChatAssistant"
 
 function LoadingScreen() {
   return (
@@ -28,9 +29,7 @@ function LoadingScreen() {
 
 function AppRoutes() {
   const { user, loading } = useAuth();
-
   if (loading) return <LoadingScreen />;
-
   return (
     <Routes>
       <Route
@@ -54,6 +53,7 @@ function AppRoutes() {
                 <Route path="/leaderboard" element={<Leaderboard />}        />
                 <Route path="*"            element={<Navigate to="/" />}    />
               </Routes>
+              <AIChatAssistant />
             </Layout>
           )
         }

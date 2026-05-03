@@ -1,38 +1,33 @@
 import os
 import json
-import time
-import google.generativeai as genai
+import requests
 from dotenv import load_dotenv
 
 load_dotenv()
 
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-model = genai.GenerativeModel("gemini-2.0-flash")
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
+MODEL = "llama-3.3-70b-versatile"
 
 
-def call_gemini_with_retry(prompt: str, retries: int = 3, wait: int = 15) -> str:
-    """Call Gemini API with automatic retry on 429 rate limit errors."""
-    for attempt in range(retries):
-        try:
-            response = model.generate_content(prompt)
-            return response.text.strip()
-        except Exception as e:
-            error_str = str(e)
-            if "429" in error_str or "quota" in error_str.lower():
-                if attempt < retries - 1:
-                    print(f"[Gemini] Rate limited. Waiting {wait}s before retry {attempt + 2}/{retries}...")
-                    time.sleep(wait)
-                else:
-                    raise Exception(
-                        "Gemini API rate limit reached. You are on the free tier (15 requests/min). "
-                        "Please wait 1 minute and try again."
-                    )
-            else:
-                raise e
+def call_groq(prompt: str) -> str:
+    """Call Groq REST API directly — no SDK needed."""
+    headers = {
+        "Authorization": f"Bearer {GROQ_API_KEY}",
+        "Content-Type": "application/json",
+    }
+    body = {
+        "model": MODEL,
+        "messages": [{"role": "user", "content": prompt}],
+        "temperature": 0.3,
+        "max_tokens": 2048,
+    }
+    response = requests.post(GROQ_URL, headers=headers, json=body, timeout=30)
+    response.raise_for_status()
+    return response.json()["choices"][0]["message"]["content"].strip()
 
 
-def clean_json_response(text: str) -> dict:
-    """Strip markdown fences and parse JSON safely."""
+def clean_json(text: str) -> dict:
     if text.startswith("```json"):
         text = text[7:]
     if text.startswith("```"):
@@ -43,8 +38,7 @@ def clean_json_response(text: str) -> dict:
 
 
 def review_code(code: str, language: str) -> dict:
-    prompt = f"""
-You are a senior software engineer doing a professional code review.
+    prompt = f"""You are a senior software engineer doing a professional code review.
 Review the following {language} code carefully.
 
 CODE TO REVIEW:
@@ -52,27 +46,20 @@ CODE TO REVIEW:
 {code}
 ```
 
-Respond ONLY with a valid JSON object (no markdown, no extra text) in this exact format:
+Respond ONLY with a valid JSON object (no markdown, no extra text):
 {{
   "score": <integer 1-10>,
   "summary": "<one sentence overall assessment>",
   "bugs": [
     {{"line": "<line number or general>", "issue": "<description>", "severity": "<high|medium|low>"}}
   ],
-  "suggestions": [
-    "<suggestion 1>",
-    "<suggestion 2>",
-    "<suggestion 3>"
-  ],
-  "positives": [
-    "<what the code does well>"
-  ],
+  "suggestions": ["<suggestion 1>", "<suggestion 2>", "<suggestion 3>"],
+  "positives": ["<what the code does well>"],
   "improved_code": "<the full improved version of the code as a string>"
-}}
-"""
+}}"""
     try:
-        text = call_gemini_with_retry(prompt)
-        result = clean_json_response(text)
+        text = call_groq(prompt)
+        result = clean_json(text)
         return {"success": True, "data": result}
     except json.JSONDecodeError as e:
         return {"success": False, "error": f"Failed to parse AI response: {str(e)}"}
@@ -81,45 +68,88 @@ Respond ONLY with a valid JSON object (no markdown, no extra text) in this exact
 
 
 def generate_interview_question(topic: str, difficulty: str) -> dict:
-    prompt = f"""
-Generate a {difficulty} level technical interview question about {topic}.
-Respond ONLY with valid JSON in this exact format:
+    prompt = f"""Generate a {difficulty} level technical interview question about {topic}.
+Respond ONLY with valid JSON:
 {{
   "question": "<the interview question>",
   "topic": "{topic}",
   "difficulty": "{difficulty}",
   "hint": "<a subtle hint without giving away the answer>",
   "sample_answer": "<a complete model answer>"
-}}
-"""
+}}"""
     try:
-        text = call_gemini_with_retry(prompt)
-        result = clean_json_response(text)
+        text = call_groq(prompt)
+        result = clean_json(text)
         return {"success": True, "data": result}
     except Exception as e:
         return {"success": False, "error": str(e)}
 
 
 def evaluate_answer(question: str, answer: str, topic: str) -> dict:
-    prompt = f"""
-You are a technical interviewer evaluating a candidate's answer.
+    prompt = f"""You are a technical interviewer evaluating a candidate's answer.
 
 Question: {question}
 Topic: {topic}
 Candidate's Answer: {answer}
 
-Respond ONLY with valid JSON in this exact format:
+Respond ONLY with valid JSON:
 {{
   "score": <integer 1-10>,
   "feedback": "<detailed feedback on the answer>",
   "what_was_good": "<what they got right>",
   "what_was_missing": "<key points they missed>",
   "model_answer": "<a complete ideal answer>"
-}}
-"""
+}}"""
     try:
-        text = call_gemini_with_retry(prompt)
-        result = clean_json_response(text)
+        text = call_groq(prompt)
+        result = clean_json(text)
         return {"success": True, "data": result}
     except Exception as e:
         return {"success": False, "error": str(e)}
+def execute_code(code: str, language: str, stdin: str = "") -> dict:
+    stdin_section = f"\nStandard Input (stdin):\n{stdin}" if stdin else ""
+    prompt = f"""You are a code interpreter. Execute the following {language} code mentally and return ONLY the output.
+
+CODE:
+````{language}
+{code}
+```{stdin_section}
+
+Rules:
+- Return ONLY valid JSON, no markdown, no explanation
+- Simulate the execution exactly as a real interpreter would
+- If there are print statements, include their output in stdout
+- If there are errors, include them in stderr
+- exitCode should be 0 for success, 1 for errors
+
+Respond in this exact JSON format:
+{{
+  "stdout": "<exact output the code would print>",
+  "stderr": "<any error messages, empty string if none>",
+  "exitCode": <0 for success, 1 for error>
+}}"""
+    try:
+        text = call_groq(prompt)
+        result = clean_json(text)
+        return {"success": True, "data": result}
+    except json.JSONDecodeError as e:
+        return {"success": False, "error": f"Failed to parse response: {str(e)}"}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+    
+
+def chat_response(message: str) -> dict:
+    prompt = f"""You are an expert DSA tutor and coding interview coach.
+Answer the student's question clearly and concisely.
+Focus on DSA, algorithms, time/space complexity, and coding interviews.
+Use examples when helpful. Be friendly and encouraging.
+
+Student's question: {message}
+
+Answer:"""
+    try:
+        text = call_groq(prompt)
+        return {"success": True, "reply": text}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+    
