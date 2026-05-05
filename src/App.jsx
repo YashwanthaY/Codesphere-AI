@@ -14,6 +14,7 @@ import AnalyticsDashboard from "./pages/AnalyticsDashboard"
 import InterviewCoach from "./pages/InterviewCoach"
 import PortfolioGenerator from "./pages/PortfolioGenerator"
 import Leaderboard from "./pages/Leaderboard"
+import DailyChallenges from "./pages/DailyChallenges"
 import AIChatAssistant from "./components/AIChatAssistant"
 
 function LoadingScreen() {
@@ -47,6 +48,7 @@ function AppRoutes() {
                 <Route path="/sql"         element={<SQLPlayground />}      />
                 <Route path="/os"          element={<OSSimulator />}        />
                 <Route path="/review"      element={<AICodeReviewer />}     />
+                <Route path="/challenges"  element={<DailyChallenges />}    />
                 <Route path="/analytics"   element={<AnalyticsDashboard />} />
                 <Route path="/interview"   element={<InterviewCoach />}     />
                 <Route path="/portfolio"   element={<PortfolioGenerator />} />
