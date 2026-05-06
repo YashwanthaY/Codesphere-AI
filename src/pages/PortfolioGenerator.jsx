@@ -137,6 +137,19 @@ export default function PortfolioGenerator() {
     toast.success("Portfolio downloaded! Open the HTML file in any browser.", { title: "Download Complete ✓" });
   }
 
+  function downloadPDF() {
+  const html = generateHTML(form, theme);
+  const printWindow = window.open("", "_blank");
+  printWindow.document.write(html);
+  printWindow.document.close();
+  printWindow.focus();
+  setTimeout(function() {
+    printWindow.print();
+    printWindow.close();
+  }, 500);
+  toast.success("Print dialog opened! Select 'Save as PDF' to download.", { title: "Save as PDF 📄" });
+}
+
   function togglePreview() {
     setPreview(function(p) { return !p; });
     if (!preview) toast.info("Preview mode — see how your portfolio looks!", { title: "Preview" });
@@ -164,13 +177,20 @@ export default function PortfolioGenerator() {
             <Eye size={14} />
             {preview ? "Edit" : "Preview"}
           </button>
-          <button
-            onClick={downloadPortfolio}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg text-sm text-white font-medium transition-all"
+            <button
+           onClick={downloadPortfolio}
+          className="flex items-center gap-2 px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm text-white font-medium transition-all"
           >
-            <Download size={14} />
-            Download HTML
+          <Download size={14} />
+          Download HTML
           </button>
+          <button
+          onClick={downloadPDF}
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg text-sm text-white font-medium transition-all"
+          >
+          <Download size={14} />
+          Download PDF
+        </button>
         </div>
       </div>
 
@@ -423,12 +443,20 @@ export default function PortfolioGenerator() {
                   );
                 })}
               </ul>
-              <button
-                onClick={downloadPortfolio}
-                className="w-full mt-4 flex items-center justify-center gap-2 py-2.5 bg-blue-600 hover:bg-blue-500 rounded-lg text-sm text-white font-medium transition-all"
-              >
-                <Download size={14} /> Download Portfolio
-              </button>
+                <button
+                  onClick={downloadPortfolio}
+                  className="flex items-center gap-2 px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm text-white font-medium transition-all"
+                >
+                  <Download size={14} />
+                  Download HTML
+                </button>
+                <button
+                  onClick={downloadPDF}
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg text-sm text-white font-medium transition-all"
+                >
+                  <Download size={14} />
+                  Download PDF
+                </button>
             </div>
           </div>
         </div>

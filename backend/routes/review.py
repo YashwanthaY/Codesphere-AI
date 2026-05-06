@@ -62,3 +62,19 @@ def chat():
         return jsonify({"reply": result["reply"]}), 200
     else:
         return jsonify({"error": result["error"]}), 500
+    
+@review_bp.route("/api/explain", methods=["POST"])
+def explain():
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "No data sent"}), 400
+    code     = data.get("code", "").strip()
+    language = data.get("language", "python").strip()
+    if not code:
+        return jsonify({"error": "No code provided"}), 400
+    from services.gemini_service import explain_code
+    result = explain_code(code, language)
+    if result["success"]:
+        return jsonify({"explanation": result["explanation"]}), 200
+    else:
+        return jsonify({"error": result["error"]}), 500

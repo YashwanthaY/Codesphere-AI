@@ -3,20 +3,21 @@ import {
   LayoutDashboard, GitBranch, Database, Cpu,
   Code2, BarChart3, MessageSquare, Sparkles,
   ChevronLeft, ChevronRight, Zap, Trophy, LogOut,
-  Flame
+  Flame, Globe
 } from "lucide-react";
 
 const NAV_ITEMS = [
-  { path: "/",            label: "Dashboard",       icon: LayoutDashboard, badge: null },
-  { path: "/dsa",         label: "DSA Visualizer",  icon: GitBranch,       badge: "10" },
-  { path: "/sql",         label: "SQL Playground",  icon: Database,        badge: null },
-  { path: "/os",          label: "OS Simulator",    icon: Cpu,             badge: null },
-  { path: "/review",      label: "AI Code Review",  icon: Code2,           badge: null },
-  { path: "/challenges",  label: "Daily Challenges",icon: Flame,           badge: "🔥" },
-  { path: "/analytics",   label: "Analytics",       icon: BarChart3,       badge: null },
-  { path: "/interview",   label: "Interview Coach", icon: MessageSquare,   badge: null },
-  { path: "/portfolio",   label: "Portfolio Gen",   icon: Sparkles,        badge: null },
-  { path: "/leaderboard", label: "Leaderboard",     icon: Trophy,          badge: null },
+  { path: "/",            label: "Dashboard",        icon: LayoutDashboard, badge: null },
+  { path: "/dsa",         label: "DSA Visualizer",   icon: GitBranch,       badge: "10" },
+  { path: "/sql",         label: "SQL Playground",   icon: Database,        badge: null },
+  { path: "/os",          label: "OS Simulator",     icon: Cpu,             badge: null },
+  { path: "/review",      label: "AI Code Review",   icon: Code2,           badge: null },
+  { path: "/challenges",  label: "Daily Challenges", icon: Flame,           badge: "🔥" },
+  { path: "/github", label: "GitHub Tracker", icon: Globe, badge: null },
+  { path: "/analytics",   label: "Analytics",        icon: BarChart3,       badge: null },
+  { path: "/interview",   label: "Interview Coach",  icon: MessageSquare,   badge: null },
+  { path: "/portfolio",   label: "Portfolio Gen",    icon: Sparkles,        badge: null },
+  { path: "/leaderboard", label: "Leaderboard",      icon: Trophy,          badge: null },
 ];
 
 export default function Sidebar({

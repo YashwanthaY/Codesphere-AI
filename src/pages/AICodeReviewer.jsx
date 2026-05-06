@@ -3,7 +3,7 @@ import {
   Play, Code2, AlertTriangle, Lightbulb,
   CheckCircle, Star, Clock, ChevronDown,
   ChevronUp, Copy, Check, Terminal, Zap,
-  RotateCcw
+  RotateCcw, MessageSquare
 } from "lucide-react";
 import { useLocalStorage } from "../hooks/useLocalStorage";
 import { useToast } from "../context/ToastContext";
@@ -100,76 +100,100 @@ export default function AICodeReviewer() {
   const [showStdin, setShowStdin]       = useState(false);
   const [execTime, setExecTime]         = useState(null);
 
-  // ── RUN CODE via Flask + Groq backend ───────────────────────────────────
+  // ── RUN CODE ────────────────────────────────────────────────────────────
   async function handleRun() {
     if (!code.trim()) return;
     if (language === "sql") {
       toast.error("SQL runs in the SQL Playground module!", { title: "Not Supported" });
       return;
     }
-
     setRunning(true);
     setRunError("");
     setOutput(null);
     const startTime = Date.now();
-
     try {
       const response = await fetch("http://localhost:5000/api/execute", {
         method:  "POST",
         headers: { "Content-Type": "application/json" },
         body:    JSON.stringify({ code, language, stdin }),
       });
-
       if (!response.ok) {
         const errData = await response.json().catch(() => ({}));
         throw new Error(errData.error || "Execution failed (" + response.status + ")");
       }
-
-      const data = await response.json();
+      const data    = await response.json();
       const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
       setExecTime(elapsed);
-
-      // ✅ Read directly from data — no intermediate 'run' variable
-      setOutput({
-        stdout:   data.stdout   || "",
-        stderr:   data.stderr   || "",
-        exitCode: data.exitCode ?? 0,
-      });
-
+      setOutput({ stdout: data.stdout || "", stderr: data.stderr || "", exitCode: data.exitCode ?? 0 });
       if (data.exitCode === 0 && !data.stderr) {
         toast.success("Code executed in " + elapsed + "s!", { title: "✓ Run Complete" });
       } else {
         toast.error("Code ran with errors.", { title: "Runtime Error" });
       }
-
     } catch (err) {
-      const isNetworkError = err instanceof TypeError && err.message.toLowerCase().includes("fetch");
-      if (isNetworkError) {
-        setRunError("Cannot connect to backend. Make sure Flask is running on port 5000.");
-      } else {
-        setRunError(err.message || "Execution failed. Please try again.");
-      }
+      const isNetwork = err instanceof TypeError && err.message.toLowerCase().includes("fetch");
+      setRunError(isNetwork
+        ? "Cannot connect to backend. Make sure Flask is running on port 5000."
+        : err.message || "Execution failed. Please try again.");
       toast.error("Execution failed.", { title: "Run Error" });
     } finally {
       setRunning(false);
     }
   }
 
-  // ── AI REVIEW via Flask + Groq backend ──────────────────────────────────
+  // ── EXPLAIN CODE ─────────────────────────────────────────────────────────
+  async function handleExplain() {
+    if (!code.trim()) return;
+    setLoading(true);
+    setError("");
+    setReview(null);
+    setShowImproved(false);
+    try {
+      const response = await fetch("http://localhost:5000/api/explain", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ code, language }),
+      });
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        setError(errData.error || "Explanation failed.");
+        return;
+      }
+      const data = await response.json();
+      setReview({
+        score:         null,
+        summary:       "📖 Code Explanation",
+        explanation:   data.explanation,
+        bugs:          [],
+        suggestions:   [],
+        positives:     [],
+        improved_code: null,
+        isExplanation: true,
+      });
+      toast.success("Code explained line by line! +10 XP", { title: "Explanation Ready ✓" });
+    } catch (err) {
+      const isNetwork = err instanceof TypeError && err.message.toLowerCase().includes("fetch");
+      setError(isNetwork
+        ? "Cannot connect to backend. Make sure Flask is running."
+        : "Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // ── AI REVIEW ────────────────────────────────────────────────────────────
   async function handleReview() {
     if (!code.trim()) return;
     setLoading(true);
     setError("");
     setReview(null);
     setShowImproved(false);
-
     try {
       const response = await fetch("http://localhost:5000/api/review", {
         method:  "POST",
         headers: { "Content-Type": "application/json" },
         body:    JSON.stringify({ code, language }),
       });
-
       if (!response.ok) {
         const errData = await response.json().catch(() => ({}));
         const message = errData.error || "Server error (" + response.status + ")";
@@ -177,15 +201,12 @@ export default function AICodeReviewer() {
         toast.error(message, { title: "API Error" });
         return;
       }
-
       const data = await response.json();
       setReview(data);
-
       toast.xp(
         "Code scored " + data.score + "/10 — " + (data.bugs ? data.bugs.length : 0) + " issues found",
         { title: "Review Complete! +15 XP" }
       );
-
       setHistory(prev => [{
         id:       Date.now(),
         language,
@@ -194,10 +215,9 @@ export default function AICodeReviewer() {
         codeSnip: code.slice(0, 80) + (code.length > 80 ? "..." : ""),
         time:     new Date().toLocaleTimeString(),
       }, ...prev].slice(0, 5));
-
     } catch (err) {
-      const isNetworkError = err instanceof TypeError && err.message.toLowerCase().includes("fetch");
-      if (isNetworkError) {
+      const isNetwork = err instanceof TypeError && err.message.toLowerCase().includes("fetch");
+      if (isNetwork) {
         const msg = "Cannot connect to backend. Make sure Flask is running on port 5000.";
         setError(msg);
         toast.error("Backend not running!", { title: "Connection Error" });
@@ -224,14 +244,14 @@ export default function AICodeReviewer() {
     setExecTime(null);
   }
 
-  const scoreColors = review ? getScoreColor(review.score) : null;
+  const scoreColors = review && !review.isExplanation ? getScoreColor(review.score) : null;
 
   return (
     <div className="space-y-5 max-w-7xl">
       <div>
         <h1 className="text-xl font-semibold text-white">AI Code Reviewer</h1>
         <p className="text-sm text-slate-400 mt-1">
-          Write code → Run it live → Get AI review — all in one place
+          Write code → Run it live → Explain it → Get AI review
         </p>
       </div>
 
@@ -307,8 +327,9 @@ export default function AICodeReviewer() {
             />
           </div>
 
-          {/* Action buttons */}
-          <div className="flex gap-3">
+          {/* ── 3 ACTION BUTTONS ── */}
+          <div className="flex gap-3 flex-wrap">
+            {/* Run */}
             <button
               onClick={handleRun}
               disabled={running || !code.trim() || language === "sql"}
@@ -322,6 +343,20 @@ export default function AICodeReviewer() {
                 : <><Terminal size={15} />Run Code</>}
             </button>
 
+            {/* Explain */}
+            <button
+              onClick={handleExplain}
+              disabled={loading || !code.trim()}
+              className="flex items-center gap-2 px-5 py-3 bg-violet-600 hover:bg-violet-500
+                         disabled:opacity-50 disabled:cursor-not-allowed rounded-xl
+                         text-sm font-semibold text-white transition-all"
+            >
+              {loading
+                ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Loading...</>
+                : <><MessageSquare size={15} />Explain Code</>}
+            </button>
+
+            {/* Review */}
             <button
               onClick={handleReview}
               disabled={loading || !code.trim()}
@@ -350,9 +385,7 @@ export default function AICodeReviewer() {
                   <Terminal size={14} className="text-emerald-400" />
                   <span className="text-sm font-semibold text-white">Output</span>
                   {execTime && (
-                    <span className="text-[10px] text-slate-500 bg-slate-800 px-2 py-0.5 rounded-full">
-                      {execTime}s
-                    </span>
+                    <span className="text-[10px] text-slate-500 bg-slate-800 px-2 py-0.5 rounded-full">{execTime}s</span>
                   )}
                   {output && (
                     <span className={"text-[10px] px-2 py-0.5 rounded-full font-mono " +
@@ -363,14 +396,11 @@ export default function AICodeReviewer() {
                     </span>
                   )}
                 </div>
-                <button
-                  onClick={clearOutput}
-                  className="text-xs text-slate-600 hover:text-slate-400 transition-colors flex items-center gap-1"
-                >
+                <button onClick={clearOutput}
+                  className="text-xs text-slate-600 hover:text-slate-400 transition-colors flex items-center gap-1">
                   <RotateCcw size={11} /> Clear
                 </button>
               </div>
-
               <div className="p-4 bg-slate-950 font-mono text-sm min-h-[80px]">
                 {running && (
                   <div className="flex items-center gap-2 text-slate-400">
@@ -406,126 +436,138 @@ export default function AICodeReviewer() {
             </div>
           )}
 
-          {/* ── REVIEW RESULTS ── */}
+          {/* ── RESULTS (Explanation OR Review) ── */}
           {review && (
             <div className="space-y-4">
 
-              {/* Score card */}
-              <div className={"flex items-center gap-5 p-5 rounded-xl border " + scoreColors.bg + " " + scoreColors.border}>
-                <div className={"text-5xl font-black " + scoreColors.text}>
-                  {review.score}
-                  <span className="text-xl font-normal text-slate-500">/10</span>
-                </div>
-                <div>
-                  <p className="text-white font-medium mb-1">{review.summary}</p>
-                  <div className="flex gap-2 text-xs">
-                    <span className="text-slate-400">{review.bugs ? review.bugs.length : 0} bugs found</span>
-                    <span className="text-slate-600">·</span>
-                    <span className="text-slate-400">{review.suggestions ? review.suggestions.length : 0} suggestions</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Bugs */}
-              {review.bugs && review.bugs.length > 0 && (
-                <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
+              {/* ── EXPLANATION ── */}
+              {review.isExplanation && (
+                <div className="bg-violet-500/10 border border-violet-500/30 rounded-xl p-5">
                   <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
-                    <AlertTriangle size={15} className="text-red-400" />
-                    Issues Found
-                    <span className="text-xs bg-red-500/15 text-red-400 px-2 py-0.5 rounded-full">{review.bugs.length}</span>
+                    <MessageSquare size={15} className="text-violet-400" />
+                    Line-by-Line Explanation
                   </h3>
-                  <div className="space-y-2">
-                    {review.bugs.map((bug, i) => (
-                      <div key={i} className="flex gap-3 bg-slate-800 rounded-lg p-3">
-                        <span className={"text-[10px] font-bold px-2 py-0.5 rounded border self-start mt-0.5 " + getSeverityColor(bug.severity)}>
-                          {bug.severity ? bug.severity.toUpperCase() : "BUG"}
-                        </span>
-                        <div>
-                          <p className="text-xs text-slate-300">{bug.issue}</p>
-                          {bug.line && bug.line !== "general" && (
-                            <p className="text-[10px] text-slate-500 mt-1">Line {bug.line}</p>
-                          )}
-                        </div>
+                  <pre className="text-sm text-slate-300 whitespace-pre-wrap leading-relaxed font-mono">
+                    {review.explanation}
+                  </pre>
+                </div>
+              )}
+
+              {/* ── REVIEW RESULTS ── */}
+              {!review.isExplanation && (
+                <>
+                  {/* Score card */}
+                  <div className={"flex items-center gap-5 p-5 rounded-xl border " + scoreColors.bg + " " + scoreColors.border}>
+                    <div className={"text-5xl font-black " + scoreColors.text}>
+                      {review.score}
+                      <span className="text-xl font-normal text-slate-500">/10</span>
+                    </div>
+                    <div>
+                      <p className="text-white font-medium mb-1">{review.summary}</p>
+                      <div className="flex gap-2 text-xs">
+                        <span className="text-slate-400">{review.bugs ? review.bugs.length : 0} bugs found</span>
+                        <span className="text-slate-600">·</span>
+                        <span className="text-slate-400">{review.suggestions ? review.suggestions.length : 0} suggestions</span>
                       </div>
-                    ))}
+                    </div>
                   </div>
-                </div>
-              )}
 
-              {/* Suggestions */}
-              {review.suggestions && review.suggestions.length > 0 && (
-                <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
-                  <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
-                    <Lightbulb size={15} className="text-amber-400" />Suggestions
-                  </h3>
-                  <ul className="space-y-2">
-                    {review.suggestions.map((s, i) => (
-                      <li key={i} className="flex gap-2 text-sm text-slate-300">
-                        <span className="text-amber-400 flex-shrink-0">→</span>{s}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {/* Positives */}
-              {review.positives && review.positives.length > 0 && (
-                <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
-                  <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
-                    <CheckCircle size={15} className="text-emerald-400" />What You Did Well
-                  </h3>
-                  <ul className="space-y-2">
-                    {review.positives.map((p, i) => (
-                      <li key={i} className="flex gap-2 text-sm text-slate-300">
-                        <span className="text-emerald-400 flex-shrink-0">✓</span>{p}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {/* Improved code */}
-              {review.improved_code && (
-                <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
-                  <button
-                    onClick={() => setShowImproved(p => !p)}
-                    className="w-full flex items-center justify-between px-5 py-3 hover:bg-slate-800 transition-all"
-                  >
-                    <span className="text-sm font-semibold text-white flex items-center gap-2">
-                      <Code2 size={15} className="text-blue-400" />Improved Code
-                    </span>
-                    {showImproved
-                      ? <ChevronUp size={16} className="text-slate-400" />
-                      : <ChevronDown size={16} className="text-slate-400" />}
-                  </button>
-                  {showImproved && (
-                    <>
-                      <div className="flex justify-between px-4 py-2 border-t border-b border-slate-800">
-                        <button
-                          onClick={() => {
-                            setCode(review.improved_code);
-                            setOutput(null);
-                            toast.success("Loaded into editor!", { title: "Loaded ✓" });
-                          }}
-                          className="flex items-center gap-1.5 text-xs text-emerald-400 hover:text-emerald-300 transition-colors"
-                        >
-                          <Play size={11} /> Load into editor & run
-                        </button>
-                        <button
-                          onClick={copyImproved}
-                          className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-white transition-colors"
-                        >
-                          {copied
-                            ? <><Check size={12} className="text-emerald-400" /> Copied!</>
-                            : <><Copy size={12} /> Copy code</>}
-                        </button>
+                  {/* Bugs */}
+                  {review.bugs && review.bugs.length > 0 && (
+                    <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
+                      <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+                        <AlertTriangle size={15} className="text-red-400" />
+                        Issues Found
+                        <span className="text-xs bg-red-500/15 text-red-400 px-2 py-0.5 rounded-full">{review.bugs.length}</span>
+                      </h3>
+                      <div className="space-y-2">
+                        {review.bugs.map((bug, i) => (
+                          <div key={i} className="flex gap-3 bg-slate-800 rounded-lg p-3">
+                            <span className={"text-[10px] font-bold px-2 py-0.5 rounded border self-start mt-0.5 " + getSeverityColor(bug.severity)}>
+                              {bug.severity ? bug.severity.toUpperCase() : "BUG"}
+                            </span>
+                            <div>
+                              <p className="text-xs text-slate-300">{bug.issue}</p>
+                              {bug.line && bug.line !== "general" && (
+                                <p className="text-[10px] text-slate-500 mt-1">Line {bug.line}</p>
+                              )}
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                      <pre className="p-4 text-sm font-mono text-slate-300 overflow-x-auto leading-relaxed bg-slate-950">
-                        {review.improved_code}
-                      </pre>
-                    </>
+                    </div>
                   )}
-                </div>
+
+                  {/* Suggestions */}
+                  {review.suggestions && review.suggestions.length > 0 && (
+                    <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
+                      <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+                        <Lightbulb size={15} className="text-amber-400" />Suggestions
+                      </h3>
+                      <ul className="space-y-2">
+                        {review.suggestions.map((s, i) => (
+                          <li key={i} className="flex gap-2 text-sm text-slate-300">
+                            <span className="text-amber-400 flex-shrink-0">→</span>{s}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Positives */}
+                  {review.positives && review.positives.length > 0 && (
+                    <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
+                      <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+                        <CheckCircle size={15} className="text-emerald-400" />What You Did Well
+                      </h3>
+                      <ul className="space-y-2">
+                        {review.positives.map((p, i) => (
+                          <li key={i} className="flex gap-2 text-sm text-slate-300">
+                            <span className="text-emerald-400 flex-shrink-0">✓</span>{p}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Improved code */}
+                  {review.improved_code && (
+                    <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
+                      <button
+                        onClick={() => setShowImproved(p => !p)}
+                        className="w-full flex items-center justify-between px-5 py-3 hover:bg-slate-800 transition-all"
+                      >
+                        <span className="text-sm font-semibold text-white flex items-center gap-2">
+                          <Code2 size={15} className="text-blue-400" />Improved Code
+                        </span>
+                        {showImproved
+                          ? <ChevronUp size={16} className="text-slate-400" />
+                          : <ChevronDown size={16} className="text-slate-400" />}
+                      </button>
+                      {showImproved && (
+                        <>
+                          <div className="flex justify-between px-4 py-2 border-t border-b border-slate-800">
+                            <button
+                              onClick={() => { setCode(review.improved_code); setOutput(null); toast.success("Loaded into editor!", { title: "Loaded ✓" }); }}
+                              className="flex items-center gap-1.5 text-xs text-emerald-400 hover:text-emerald-300 transition-colors"
+                            >
+                              <Play size={11} /> Load into editor & run
+                            </button>
+                            <button onClick={copyImproved}
+                              className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-white transition-colors">
+                              {copied
+                                ? <><Check size={12} className="text-emerald-400" /> Copied!</>
+                                : <><Copy size={12} /> Copy code</>}
+                            </button>
+                          </div>
+                          <pre className="p-4 text-sm font-mono text-slate-300 overflow-x-auto leading-relaxed bg-slate-950">
+                            {review.improved_code}
+                          </pre>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </>
               )}
             </div>
           )}
@@ -539,10 +581,10 @@ export default function AICodeReviewer() {
             </h3>
             <div className="space-y-3">
               {[
-                { step: "1", text: "Paste or write your code",              color: "bg-blue-500/20 text-blue-400"       },
-                { step: "2", text: "Click Run Code to execute it live",      color: "bg-emerald-500/20 text-emerald-400" },
-                { step: "3", text: "Click Review with AI for deep analysis", color: "bg-violet-500/20 text-violet-400"   },
-                { step: "4", text: "Load improved code and run to compare",  color: "bg-amber-500/20 text-amber-400"     },
+                { step: "1", text: "Paste or write your code",               color: "bg-blue-500/20 text-blue-400"       },
+                { step: "2", text: "Run Code — execute it live",              color: "bg-emerald-500/20 text-emerald-400" },
+                { step: "3", text: "Explain Code — understand line by line",  color: "bg-violet-500/20 text-violet-400"   },
+                { step: "4", text: "Review with AI — get bugs & suggestions", color: "bg-amber-500/20 text-amber-400"     },
               ].map(item => (
                 <div key={item.step} className="flex gap-3 items-start">
                   <span className={"w-5 h-5 rounded-full text-xs flex items-center justify-center flex-shrink-0 font-semibold " + item.color}>
@@ -556,14 +598,14 @@ export default function AICodeReviewer() {
 
           <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
             <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
-              <Terminal size={14} className="text-emerald-400" />Live Execution
+              <Terminal size={14} className="text-emerald-400" />Features
             </h3>
             <div className="space-y-2 text-xs text-slate-400">
-              <p>→ Powered by <span className="text-emerald-400 font-medium">Groq AI</span></p>
-              <p>→ Supports Python, JS, C++, Java, TypeScript</p>
-              <p>→ Real stdout + stderr output</p>
-              <p>→ Custom stdin support (click stdin button)</p>
-              <p>→ Execution time displayed</p>
+              <p>→ <span className="text-emerald-400">Run</span> — live code execution</p>
+              <p>→ <span className="text-violet-400">Explain</span> — line-by-line breakdown</p>
+              <p>→ <span className="text-blue-400">Review</span> — bugs, score, improvements</p>
+              <p>→ Supports Python, JS, C++, Java, TS</p>
+              <p>→ Powered by Groq AI (llama-3.3-70b)</p>
             </div>
           </div>
 
@@ -595,11 +637,11 @@ export default function AICodeReviewer() {
           <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
             <h3 className="text-sm font-semibold text-white mb-3">💡 Tips</h3>
             <ul className="space-y-2 text-xs text-slate-400">
-              <li>→ Run first to verify output, then review</li>
-              <li>→ Try code with intentional bugs</li>
+              <li>→ Run first to verify output</li>
+              <li>→ Use Explain to understand complex code</li>
+              <li>→ Use Review to find bugs and improve</li>
               <li>→ Load improved code and run to compare</li>
-              <li>→ Use stdin for programs that need input</li>
-              <li>→ AI powered by Groq (llama-3.3-70b)</li>
+              <li>→ Use stdin for interactive programs</li>
             </ul>
           </div>
         </div>

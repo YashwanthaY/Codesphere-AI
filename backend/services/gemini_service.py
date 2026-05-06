@@ -153,3 +153,32 @@ Answer:"""
     except Exception as e:
         return {"success": False, "error": str(e)}
     
+    
+def explain_code(code: str, language: str) -> dict:
+    prompt = f"""You are a coding teacher explaining code to a beginner student.
+Explain the following {language} code clearly and simply.
+
+CODE:
+```{language}
+{code}
+```
+
+Rules:
+- Explain what the OVERALL code does in 1-2 sentences first
+- Then explain each important line or block
+- Use simple English, no jargon
+- Format like:
+  OVERVIEW: ...
+  
+  LINE BY LINE:
+  Line 1-3: ...
+  Line 4: ...
+  etc.
+- Point out any patterns or algorithms used
+- Mention time/space complexity if relevant"""
+    try:
+        text = call_groq(prompt)
+        return {{"success": True, "explanation": text}}
+    except Exception as e:
+        return {{"success": False, "error": str(e)}}
+    
