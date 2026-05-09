@@ -16,6 +16,7 @@ import PortfolioGenerator from "./pages/PortfolioGenerator"
 import Leaderboard from "./pages/Leaderboard"
 import DailyChallenges from "./pages/DailyChallenges"
 import GitHubTracker from "./pages/GitHubTracker"
+import Achievements from "./pages/Achievements"
 import AIChatAssistant from "./components/AIChatAssistant"
 
 function LoadingScreen() {
@@ -44,18 +45,19 @@ function AppRoutes() {
           !user ? <Navigate to="/login" replace /> : (
             <Layout>
               <Routes>
-                <Route path="/"            element={<Dashboard />}          />
-                <Route path="/dsa"         element={<DSAVisualizer />}      />
-                <Route path="/sql"         element={<SQLPlayground />}      />
-                <Route path="/os"          element={<OSSimulator />}        />
-                <Route path="/review"      element={<AICodeReviewer />}     />
-                <Route path="/challenges"  element={<DailyChallenges />}    />
-                <Route path="/github"      element={<GitHubTracker />}      />
-                <Route path="/analytics"   element={<AnalyticsDashboard />} />
-                <Route path="/interview"   element={<InterviewCoach />}     />
-                <Route path="/portfolio"   element={<PortfolioGenerator />} />
-                <Route path="/leaderboard" element={<Leaderboard />}        />
-                <Route path="*"            element={<Navigate to="/" />}    />
+                <Route path="/"             element={<Dashboard />}          />
+                <Route path="/dsa"          element={<DSAVisualizer />}      />
+                <Route path="/sql"          element={<SQLPlayground />}      />
+                <Route path="/os"           element={<OSSimulator />}        />
+                <Route path="/review"       element={<AICodeReviewer />}     />
+                <Route path="/challenges"   element={<DailyChallenges />}    />
+                <Route path="/github"       element={<GitHubTracker />}      />
+                <Route path="/achievements" element={<Achievements />}       />
+                <Route path="/analytics"    element={<AnalyticsDashboard />} />
+                <Route path="/interview"    element={<InterviewCoach />}     />
+                <Route path="/portfolio"    element={<PortfolioGenerator />} />
+                <Route path="/leaderboard"  element={<Leaderboard />}        />
+                <Route path="*"             element={<Navigate to="/" />}    />
               </Routes>
               <AIChatAssistant />
             </Layout>
