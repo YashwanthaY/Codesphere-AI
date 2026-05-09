@@ -3,11 +3,12 @@ import {
   LayoutDashboard, GitBranch, Database, Cpu,
   Code2, BarChart3, MessageSquare, Sparkles,
   ChevronLeft, ChevronRight, Zap, Trophy, LogOut,
-  Flame, Globe, Medal
+  Flame, Globe, Medal,BarChart2
 } from "lucide-react";
 
 const NAV_ITEMS = [
   { path: "/",             label: "Dashboard",        icon: LayoutDashboard, badge: null  },
+  { path: "/progress",      icon: BarChart2, label: "Progress" },
   { path: "/dsa",          label: "DSA Visualizer",   icon: GitBranch,       badge: "10"  },
   { path: "/sql",          label: "SQL Playground",   icon: Database,        badge: null  },
   { path: "/os",           label: "OS Simulator",     icon: Cpu,             badge: null  },

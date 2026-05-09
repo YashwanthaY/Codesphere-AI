@@ -7,6 +7,8 @@ import {
 } from "lucide-react";
 import { useLocalStorage } from "../hooks/useLocalStorage";
 import { useToast } from "../context/ToastContext";
+import { trackModuleVisit, trackCodeReview, trackCodeExecution, trackCodeExplanation } from "../utils/progressTracker";
+trackModuleVisit("AI Code Reviewer");
 
 const LANGUAGES = [
   { id: "python",     label: "Python",     icon: "🐍" },
@@ -117,6 +119,7 @@ export default function AICodeReviewer() {
         headers: { "Content-Type": "application/json" },
         body:    JSON.stringify({ code, language, stdin }),
       });
+      trackCodeExecution();
       if (!response.ok) {
         const errData = await response.json().catch(() => ({}));
         throw new Error(errData.error || "Execution failed (" + response.status + ")");
@@ -154,6 +157,7 @@ export default function AICodeReviewer() {
         headers: { "Content-Type": "application/json" },
         body:    JSON.stringify({ code, language }),
       });
+      trackCodeExplanation();
       if (!response.ok) {
         const errData = await response.json().catch(() => ({}));
         setError(errData.error || "Explanation failed.");
@@ -194,6 +198,7 @@ export default function AICodeReviewer() {
         headers: { "Content-Type": "application/json" },
         body:    JSON.stringify({ code, language }),
       });
+      trackCodeReview();
       if (!response.ok) {
         const errData = await response.json().catch(() => ({}));
         const message = errData.error || "Server error (" + response.status + ")";

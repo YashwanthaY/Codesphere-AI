@@ -18,6 +18,8 @@ import DailyChallenges from "./pages/DailyChallenges"
 import GitHubTracker from "./pages/GitHubTracker"
 import Achievements from "./pages/Achievements"
 import AIChatAssistant from "./components/AIChatAssistant"
+import ProgressDashboard from "./pages/ProgressDashboard";
+
 
 function LoadingScreen() {
   return (
@@ -56,6 +58,7 @@ function AppRoutes() {
                 <Route path="/analytics"    element={<AnalyticsDashboard />} />
                 <Route path="/interview"    element={<InterviewCoach />}     />
                 <Route path="/portfolio"    element={<PortfolioGenerator />} />
+                <Route path="/progress" element={<ProgressDashboard />} />
                 <Route path="/leaderboard"  element={<Leaderboard />}        />
                 <Route path="*"             element={<Navigate to="/" />}    />
               </Routes>

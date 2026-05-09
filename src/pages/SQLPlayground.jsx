@@ -9,6 +9,8 @@ import { Play, Clock, Database, BookOpen, BarChart2, PieChart, Trash2 } from "lu
 import { DATABASES } from "../utils/sqlDatabases";
 import { useLocalStorage } from "../hooks/useLocalStorage";
 import { useToast } from "../context/ToastContext";
+import { trackModuleVisit, trackSQLQuery } from "../utils/progressTracker";
+trackModuleVisit("SQL Playground");
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Tooltip, Legend);
 
@@ -347,7 +349,7 @@ export default function SQLPlayground() {
             {results && results.columns.length === 0 && (
               <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-4">
                 <p className="text-emerald-400 text-sm">✓ Query executed successfully. No rows returned.</p>
-                
+                trackSQLQuery();
               </div>
             )}
             

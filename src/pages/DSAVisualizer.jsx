@@ -14,6 +14,7 @@ import {
   COMPLEXITY,
   CPP_CODE,
 } from "../utils/algorithms";
+import { trackModuleVisit, trackDSA } from "../utils/progressTracker";
 
 // ── ALGORITHM REGISTRY ───────────────────────────────────────────────────────
 const ALGORITHMS = [
@@ -375,6 +376,7 @@ export default function DSAVisualizer() {
 
   useEffect(function () {
     generateSteps(selectedAlgo, array);
+    trackDSA(selectedAlgorithm); // selectedAlgorithm is whatever your state variable is called
   }, [selectedAlgo, array, generateSteps]);
 
   useEffect(function () {

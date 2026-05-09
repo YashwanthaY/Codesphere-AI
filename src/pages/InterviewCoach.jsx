@@ -6,6 +6,7 @@ import {
   Clock, AlertCircle, Zap, Flame, Star
 } from "lucide-react";
 import { useLocalStorage } from "../hooks/useLocalStorage";
+import { trackModuleVisit, trackInterview } from "../utils/progressTracker";
 
 // ── CONSTANTS ────────────────────────────────────────────────────────────────
 const TOPICS = [
@@ -25,13 +26,12 @@ const TIMER_DURATIONS = {
   Easy:   90,
   Medium: 60,
   Hard:   45,
-  Mock:   45, // Mock is always strict
+  Mock:   45,
 };
 
 const TOTAL_QUESTIONS    = 5;
-const MOCK_TOTAL         = 8; // Mock has more questions
+const MOCK_TOTAL         = 8;
 
-// Mock interview topics — mixed
 const MOCK_TOPICS = ["DSA", "JavaScript", "System Design", "OS", "SQL", "React", "Python", "DSA"];
 
 function scoreColor(score) {
@@ -68,7 +68,7 @@ function getMockVerdict(score) {
 }
 
 export default function InterviewCoach() {
-  const [mode, setMode]               = useState("normal"); // "normal" | "mock"
+  const [mode, setMode]               = useState("normal");
   const [topic, setTopic]             = useState("JavaScript");
   const [difficulty, setDifficulty]   = useState("Medium");
   const [sessionState, setSessionState] = useState("setup");
@@ -96,6 +96,11 @@ export default function InterviewCoach() {
   const currentDiff  = isMock ? "Hard" : difficulty;
 
   const [pastSessions, setPastSessions] = useLocalStorage("interview-sessions", []);
+
+  // ✅ FIX 1: trackModuleVisit MUST be inside useEffect, not at file level
+  useEffect(function() {
+    trackModuleVisit("Interview Coach");
+  }, []);
 
   // ── Timer ────────────────────────────────────────────────────────────────
   useEffect(function() {
@@ -221,6 +226,9 @@ export default function InterviewCoach() {
       setFeedback(fb);
       setSessionState("feedback");
       setTimeUsed(usedTime);
+
+      // ✅ FIX 2: trackInterview called HERE — inside the function, after we have fb data
+      trackInterview(finalScore, fb.verdict ?? (finalScore >= 6 ? "HIRED" : "REJECTED"), currentTopic);
 
       setAllResults(function(prev) {
         return [...prev, {
@@ -525,7 +533,6 @@ export default function InterviewCoach() {
       {sessionState === "question" && (
         <div className="space-y-4">
 
-          {/* Mock mode banner */}
           {isMock && (
             <div className="bg-orange-500/10 border border-orange-500/30 rounded-xl px-4 py-2.5 flex items-center gap-2">
               <Flame size={14} className="text-orange-400" />
@@ -677,7 +684,6 @@ export default function InterviewCoach() {
             </div>
           </div>
 
-          {/* Auto-submit warning */}
           {autoSubmitted && (
             <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-3 flex items-center gap-2">
               <AlertCircle size={14} className="text-red-400" />
@@ -706,7 +712,6 @@ export default function InterviewCoach() {
             </div>
           </div>
 
-          {/* What was good */}
           {feedback.what_was_good && (
             <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
               <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
@@ -716,7 +721,6 @@ export default function InterviewCoach() {
             </div>
           )}
 
-          {/* What was missing */}
           {feedback.what_was_missing && (
             <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
               <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
@@ -726,7 +730,6 @@ export default function InterviewCoach() {
             </div>
           )}
 
-          {/* Model answer */}
           {feedback.model_answer && (
             <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
               <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
@@ -736,7 +739,6 @@ export default function InterviewCoach() {
             </div>
           )}
 
-          {/* Next button */}
           <button
             onClick={nextQuestion}
             className={"w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold text-white transition-all " +
@@ -753,7 +755,6 @@ export default function InterviewCoach() {
       {sessionState === "report" && (
         <div className="space-y-5">
 
-          {/* Mock verdict */}
           {isMock && (
             <div className={"p-6 rounded-xl border text-center " + verdict.bg}>
               <p className="text-slate-400 text-sm mb-2">Interview Verdict</p>
@@ -762,7 +763,6 @@ export default function InterviewCoach() {
             </div>
           )}
 
-          {/* Overall score */}
           <div className={"p-6 rounded-xl border text-center " + scoreBg(parseFloat(avgScore))}>
             <p className="text-slate-400 text-sm mb-2">Overall Score</p>
             <p className={"text-6xl font-black mb-2 " + scoreColor(parseFloat(avgScore))}>
@@ -773,7 +773,6 @@ export default function InterviewCoach() {
             </p>
           </div>
 
-          {/* Time stats */}
           <div className="grid grid-cols-3 gap-4">
             {[
               {
@@ -805,7 +804,6 @@ export default function InterviewCoach() {
             })}
           </div>
 
-          {/* Score breakdown */}
           <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
             <h3 className="text-sm font-semibold text-white mb-4">Score Breakdown</h3>
             <div className="space-y-3">
@@ -833,7 +831,6 @@ export default function InterviewCoach() {
             </div>
           </div>
 
-          {/* Full review */}
           <div className="space-y-3">
             <h3 className="text-sm font-semibold text-white">Full Review</h3>
             {allResults.map(function(r, i) {
@@ -864,7 +861,6 @@ export default function InterviewCoach() {
             })}
           </div>
 
-          {/* Action buttons */}
           <div className="flex gap-3">
             <button
               onClick={startSession}
