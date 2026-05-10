@@ -10,7 +10,6 @@ import { DATABASES } from "../utils/sqlDatabases";
 import { useLocalStorage } from "../hooks/useLocalStorage";
 import { useToast } from "../context/ToastContext";
 import { trackModuleVisit, trackSQLQuery } from "../utils/progressTracker";
-trackModuleVisit("SQL Playground");
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Tooltip, Legend);
 
@@ -69,6 +68,7 @@ export default function SQLPlayground() {
   const editorRef = useRef(null);
 
   useEffect(function() {
+    trackModuleVisit("SQL Playground");
     async function loadDb() {
       setLoading(true);
       setResults(null);
@@ -102,6 +102,7 @@ export default function SQLPlayground() {
       setExecTime(elapsed);
       if (stmt.length === 0) {
         setResults({ columns: [], values: [], rowCount: 0 });
+        runQuery()
         toast.success("Query executed successfully!", { title: "SQL ✓" });
       } else {
         const { columns, values } = stmt[0];
@@ -349,7 +350,7 @@ export default function SQLPlayground() {
             {results && results.columns.length === 0 && (
               <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-4">
                 <p className="text-emerald-400 text-sm">✓ Query executed successfully. No rows returned.</p>
-                trackSQLQuery();
+
               </div>
             )}
             

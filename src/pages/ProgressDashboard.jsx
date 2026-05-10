@@ -75,7 +75,8 @@ const CustomTooltip = ({ active, payload, label }) => {
 
 // ─────────────────────────────────────────────────────────────
 export default function ProgressDashboard() {
-  const { xp, level } = useXP();
+  const { totalXP: xp, currentLevel: levelInfo2, awardXP: addXP } = useXP();
+  const level = levelInfo2?.level || 1;
   const { user } = useAuth();
   const { showToast } = useToast();
 
@@ -158,7 +159,7 @@ export default function ProgressDashboard() {
   const kpiCards = [
     {
       label: "Total XP",
-      value: xp.toLocaleString(),
+      value: (xp || 0).toLocaleString(),
       icon: Zap,
       color: "text-yellow-500",
       bg: "from-yellow-50 to-amber-50 dark:from-yellow-900/20 dark:to-amber-900/20",

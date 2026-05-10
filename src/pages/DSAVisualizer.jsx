@@ -375,9 +375,13 @@ export default function DSAVisualizer() {
   }, [searchTarget, llOperation]);
 
   useEffect(function () {
-    generateSteps(selectedAlgo, array);
-    trackDSA(selectedAlgorithm); // selectedAlgorithm is whatever your state variable is called
+  generateSteps(selectedAlgo, array);
   }, [selectedAlgo, array, generateSteps]);
+
+  // ✅ Separate useEffect — tracks module visit once on mount
+  useEffect(function () {
+  trackModuleVisit("DSA Visualizer");
+  }   , []);
 
   useEffect(function () {
     if (isPlaying) {
@@ -451,7 +455,9 @@ export default function DSAVisualizer() {
                 return (
                   <button
                     key={algo.id}
-                    onClick={function () { setSelectedAlgo(algo.id); }}
+                    onClick={function () { setSelectedAlgo(algo.id);
+                      trackDSA(algo.label); 
+                     }}
                     className={
                       "px-3 py-1.5 rounded-lg text-xs font-medium border transition-all " +
                       (selectedAlgo === algo.id

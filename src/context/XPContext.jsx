@@ -10,11 +10,11 @@ const XPContext = createContext(null);
 
 // ── LEVEL CONFIG ──────────────────────────────────────────────────────────────
 export const LEVELS = [
-  { level: 1, title: "Beginner",     minXP: 0,    maxXP: 100,  color: "text-slate-400",   bg: "bg-slate-500/20",   icon: "🌱" },
-  { level: 2, title: "Junior Dev",   minXP: 100,  maxXP: 300,  color: "text-blue-400",    bg: "bg-blue-500/20",    icon: "💻" },
-  { level: 3, title: "Mid Dev",      minXP: 300,  maxXP: 600,  color: "text-emerald-400", bg: "bg-emerald-500/20", icon: "⚡" },
-  { level: 4, title: "Senior Dev",   minXP: 600,  maxXP: 1000, color: "text-violet-400",  bg: "bg-violet-500/20",  icon: "🚀" },
-  { level: 5, title: "Expert",       minXP: 1000, maxXP: 9999, color: "text-amber-400",   bg: "bg-amber-500/20",   icon: "👑" },
+  { level: 1, title: "Beginner",   minXP: 0,    maxXP: 200,  color: "text-slate-400",   bg: "bg-slate-500/20",   icon: "🌱" },
+  { level: 2, title: "Junior Dev", minXP: 200,  maxXP: 500,  color: "text-blue-400",    bg: "bg-blue-500/20",    icon: "💻" },
+  { level: 3, title: "Mid Dev",    minXP: 500,  maxXP: 1000, color: "text-emerald-400", bg: "bg-emerald-500/20", icon: "⚡" },
+  { level: 4, title: "Senior Dev", minXP: 1000, maxXP: 2000, color: "text-violet-400",  bg: "bg-violet-500/20",  icon: "🚀" },
+  { level: 5, title: "Expert",     minXP: 2000, maxXP: 9999, color: "text-amber-400",   bg: "bg-amber-500/20",   icon: "👑" },
 ];
 
 // ── XP REWARDS ────────────────────────────────────────────────────────────────
@@ -126,15 +126,19 @@ export function XPProvider({ children }) {
   const nextLevel    = getNextLevel(currentLevel.level);
   const progress     = getXPProgress(totalXP);
 
-  const value = {
-    totalXP,
-    xpHistory,
-    currentLevel,
-    nextLevel,
-    progress,
-    awardXP,
-    resetXP,
-  };
+const value = {
+  totalXP,
+  xpHistory,
+  currentLevel,
+  nextLevel,
+  progress,
+  awardXP,
+  resetXP,
+  // ✅ Aliases so all modules work regardless of naming
+  xp:    totalXP,
+  level: currentLevel.level,
+  addXP: awardXP,
+};
 
   return (
     <XPContext.Provider value={value}>

@@ -6,9 +6,10 @@ import {
 } from "lucide-react";
 import { useToast } from "../context/ToastContext";
 import { useLocalStorage } from "../hooks/useLocalStorage";
+import { useXP } from "../context/XPContext";
+import { trackModuleVisit, trackChallenge } from "../utils/progressTracker";
 
 // ── STATIC CHALLENGE BANK ────────────────────────────────────────────────────
-// 30 challenges — one per day, cycles monthly
 const CHALLENGE_BANK = [
   { id: 1,  title: "Two Sum",                    difficulty: "Easy",   topic: "Arrays",        xp: 50,  description: "Given an array of integers and a target, return indices of two numbers that add up to the target.", examples: ["Input: nums=[2,7,11,15], target=9 → Output: [0,1]", "Input: nums=[3,2,4], target=6 → Output: [1,2]"], hint: "Use a hash map to store complement values." },
   { id: 2,  title: "Valid Parentheses",          difficulty: "Easy",   topic: "Stack",         xp: 50,  description: "Given a string containing '(', ')', '{', '}', '[', ']', determine if it is valid.", examples: ["Input: s='()[]{}' → Output: true", "Input: s='(]' → Output: false"], hint: "Use a stack — push opening brackets, pop and check closing brackets." },
@@ -59,7 +60,6 @@ const TOPIC_COLORS = {
   Greedy: "bg-emerald-500/15 text-emerald-400",
 };
 
-// Get today's challenge index (cycles through 30)
 function getTodayIndex() {
   const start = new Date("2026-01-01");
   const today = new Date();
@@ -73,36 +73,43 @@ function getTodayKey() {
 }
 
 export default function DailyChallenges() {
-  const toast = useToast();
+  const toast               = useToast();
+  // ✅ FIX 1: Connect to XPContext so XP actually shows in sidebar
+  const { awardXP }         = useXP();
 
   const todayIdx   = getTodayIndex();
   const todayKey   = getTodayKey();
   const today      = CHALLENGE_BANK[todayIdx];
 
-  // Persist completed challenges and streak
-  const [completed,   setCompleted]   = useLocalStorage("challenges-completed", {});
-  const [streak,      setStreak]      = useLocalStorage("challenges-streak", 0);
-  const [lastDate,    setLastDate]    = useLocalStorage("challenges-lastdate", "");
+  const [completed,     setCompleted]     = useLocalStorage("challenges-completed", {});
+  const [streak,        setStreak]        = useLocalStorage("challenges-streak", 0);
+  const [lastDate,      setLastDate]      = useLocalStorage("challenges-lastdate", "");
   const [totalXPEarned, setTotalXPEarned] = useLocalStorage("challenges-xp", 0);
 
-  const [showHint,    setShowHint]    = useState(false);
-  const [showSolution,setShowSolution]= useState(false);
-  const [solution,    setSolution]    = useState(null);
-  const [loadingSol,  setLoadingSol]  = useState(false);
-  const [answer,      setAnswer]      = useState("");
-  const [submitted,   setSubmitted]   = useState(false);
-  const [activeTab,   setActiveTab]   = useState("today"); // "today" | "history"
-  const [filter,      setFilter]      = useState("All");
+  const [showHint,     setShowHint]     = useState(false);
+  const [showSolution, setShowSolution] = useState(false);
+  const [solution,     setSolution]     = useState(null);
+  const [loadingSol,   setLoadingSol]   = useState(false);
+  const [answer,       setAnswer]       = useState("");
+  const [submitted,    setSubmitted]    = useState(false);
+  const [activeTab,    setActiveTab]    = useState("today");
+  const [filter,       setFilter]       = useState("All");
 
   const isTodayDone = !!completed[todayKey];
 
-  // Calculate streak on mount
-  useEffect(() => {
+  // Track module visit
+  useEffect(function() {
+    trackModuleVisit("Daily Challenges");
+  }, []);
+
+  // ✅ FIX 2: Proper streak logic — only reset if gap > 1 day
+  useEffect(function() {
+    if (!lastDate || lastDate === todayKey) return;
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
     const yesterdayKey = `${yesterday.getFullYear()}-${yesterday.getMonth()}-${yesterday.getDate()}`;
-    if (lastDate !== todayKey && lastDate !== yesterdayKey && lastDate !== "") {
-      // Streak broken
+    if (lastDate !== yesterdayKey) {
+      // More than 1 day gap — streak broken
       setStreak(0);
     }
   }, []);
@@ -112,7 +119,7 @@ export default function DailyChallenges() {
     setShowSolution(true);
     try {
       const response = await fetch("http://localhost:5000/api/chat", {
-        method: "POST",
+        method:  "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           message: `Provide a clean solution for this coding problem:
@@ -139,6 +146,7 @@ Keep it concise and educational.`
 
   function handleSubmit() {
     if (!answer.trim()) {
+      // ✅ FIX 3: Use toast.error not toast.xp (doesn't exist)
       toast.error("Write your approach before submitting!", { title: "Empty Answer" });
       return;
     }
@@ -147,77 +155,103 @@ Keep it concise and educational.`
       return;
     }
 
-    // Mark as complete
-    const newCompleted = { ...completed, [todayKey]: { title: today.title, xp: today.xp, difficulty: today.difficulty } };
+    // Mark today as complete
+    const newCompleted = {
+      ...completed,
+      [todayKey]: { title: today.title, xp: today.xp, difficulty: today.difficulty },
+    };
     setCompleted(newCompleted);
     setLastDate(todayKey);
-    setStreak(prev => prev + 1);
-    setTotalXPEarned(prev => prev + today.xp);
+
+    // ✅ FIX 4: Proper streak — increment only if yesterday was done or first ever
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayKey = `${yesterday.getFullYear()}-${yesterday.getMonth()}-${yesterday.getDate()}`;
+    const newStreak = (lastDate === yesterdayKey || streak === 0) ? streak + 1 : 1;
+    setStreak(newStreak);
+
+    // ✅ FIX 5: Actually award XP to XPContext (shows in sidebar)
+    awardXP(today.xp, `Daily Challenge: ${today.title}`);
+    setTotalXPEarned(function(prev) { return prev + today.xp; });
+
+    // ✅ FIX 6: Track in progressTracker
+    trackChallenge(today.id, true);
+
     setSubmitted(true);
 
-    toast.xp(`+${today.xp} XP earned! Streak: ${streak + 1} days 🔥`, { title: "Challenge Complete! 🎉" });
+    // ✅ FIX 7: Use toast.success not toast.xp
+    toast.success(`+${today.xp} XP earned! Streak: ${newStreak} days 🔥`, { title: "Challenge Complete! 🎉" });
+
+    // Update longest streak in localStorage for Achievements
+    const currentLongest = parseInt(localStorage.getItem("cs_longestStreak") || "0");
+    if (newStreak > currentLongest) {
+      localStorage.setItem("cs_longestStreak", String(newStreak));
+    }
   }
 
   const completedCount = Object.keys(completed).length;
   const difficulties   = ["All", "Easy", "Medium", "Hard"];
   const filteredBank   = filter === "All"
     ? CHALLENGE_BANK
-    : CHALLENGE_BANK.filter(c => c.difficulty === filter);
+    : CHALLENGE_BANK.filter(function(c) { return c.difficulty === filter; });
 
   return (
     <div className="space-y-5 max-w-7xl">
+
       {/* Header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-xl font-semibold text-white flex items-center gap-2">
-            <Trophy size={20} className="text-amber-400" />
-            Daily Coding Challenges
-          </h1>
-          <p className="text-sm text-slate-400 mt-1">
-            One new problem every day — solve it, earn XP, maintain your streak
-          </p>
-        </div>
+      <div>
+        <h1 className="text-xl font-semibold text-white flex items-center gap-2">
+          <Trophy size={20} className="text-amber-400" />
+          Daily Coding Challenges
+        </h1>
+        <p className="text-sm text-slate-400 mt-1">
+          One new problem every day — solve it, earn XP, maintain your streak
+        </p>
       </div>
 
       {/* Stats row */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { label: "Day Streak",    value: streak,         icon: Flame,      color: "text-orange-400", bg: "bg-orange-500/10" },
-          { label: "Completed",     value: completedCount, icon: CheckCircle,color: "text-emerald-400",bg: "bg-emerald-500/10" },
-          { label: "XP Earned",     value: totalXPEarned,  icon: Zap,        color: "text-blue-400",   bg: "bg-blue-500/10"   },
-          { label: "Today's XP",    value: today.xp,       icon: Star,       color: "text-amber-400",  bg: "bg-amber-500/10"  },
-        ].map(stat => (
-          <div key={stat.label} className="bg-slate-900 border border-slate-800 rounded-xl p-4">
-            <div className={"w-8 h-8 rounded-lg flex items-center justify-center mb-2 " + stat.bg}>
-              <stat.icon size={16} className={stat.color} />
+          { label: "Day Streak",  value: streak,         icon: Flame,       color: "text-orange-400", bg: "bg-orange-500/10"  },
+          { label: "Completed",   value: completedCount, icon: CheckCircle, color: "text-emerald-400",bg: "bg-emerald-500/10" },
+          { label: "XP Earned",   value: totalXPEarned,  icon: Zap,         color: "text-blue-400",   bg: "bg-blue-500/10"   },
+          { label: "Today's XP",  value: today.xp,       icon: Star,        color: "text-amber-400",  bg: "bg-amber-500/10"  },
+        ].map(function(stat) {
+          const Icon = stat.icon;
+          return (
+            <div key={stat.label} className="bg-slate-900 border border-slate-800 rounded-xl p-4">
+              <div className={"w-8 h-8 rounded-lg flex items-center justify-center mb-2 " + stat.bg}>
+                <Icon size={16} className={stat.color} />
+              </div>
+              <p className={"text-xl font-bold " + stat.color}>{stat.value}</p>
+              <p className="text-xs text-slate-500">{stat.label}</p>
             </div>
-            <p className={"text-xl font-bold " + stat.color}>{stat.value}</p>
-            <p className="text-xs text-slate-500">{stat.label}</p>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Tabs */}
       <div className="flex gap-2">
-        {["today", "history"].map(tab => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={"px-4 py-2 rounded-lg text-sm font-medium transition-all capitalize " +
-              (activeTab === tab
-                ? "bg-blue-600 text-white"
-                : "bg-slate-800 text-slate-400 hover:text-slate-200")}
-          >
-            {tab === "today" ? "📅 Today's Challenge" : "📚 All Challenges"}
-          </button>
-        ))}
+        {["today", "history"].map(function(tab) {
+          return (
+            <button
+              key={tab}
+              onClick={function() { setActiveTab(tab); }}
+              className={"px-4 py-2 rounded-lg text-sm font-medium transition-all " +
+                (activeTab === tab
+                  ? "bg-blue-600 text-white"
+                  : "bg-slate-800 text-slate-400 hover:text-slate-200")}
+            >
+              {tab === "today" ? "📅 Today's Challenge" : "📚 All Challenges"}
+            </button>
+          );
+        })}
       </div>
 
       {/* ── TODAY'S CHALLENGE ── */}
       {activeTab === "today" && (
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
 
-          {/* Main challenge card */}
           <div className="xl:col-span-2 space-y-4">
 
             {/* Challenge header */}
@@ -255,27 +289,30 @@ Keep it concise and educational.`
                 {today.description}
               </p>
 
-              {/* Examples */}
               <div className="space-y-2">
                 <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Examples</p>
-                {today.examples.map((ex, i) => (
-                  <div key={i} className="bg-slate-950 rounded-lg p-3 font-mono text-xs text-slate-300">
-                    {ex}
-                  </div>
-                ))}
+                {today.examples.map(function(ex, i) {
+                  return (
+                    <div key={i} className="bg-slate-950 rounded-lg p-3 font-mono text-xs text-slate-300">
+                      {ex}
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
             {/* Hint */}
             <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
               <button
-                onClick={() => setShowHint(p => !p)}
+                onClick={function() { setShowHint(function(p) { return !p; }); }}
                 className="w-full flex items-center justify-between px-5 py-3 hover:bg-slate-800 transition-all"
               >
                 <span className="text-sm font-medium text-amber-400 flex items-center gap-2">
                   💡 Hint
                 </span>
-                {showHint ? <ChevronUp size={16} className="text-slate-400" /> : <ChevronDown size={16} className="text-slate-400" />}
+                {showHint
+                  ? <ChevronUp size={16} className="text-slate-400" />
+                  : <ChevronDown size={16} className="text-slate-400" />}
               </button>
               {showHint && (
                 <div className="px-5 pb-4 text-sm text-slate-300 border-t border-slate-800 pt-3">
@@ -286,13 +323,20 @@ Keep it concise and educational.`
 
             {/* Answer box */}
             <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-3">
-              <p className="text-sm font-semibold text-white">Your Approach</p>
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-semibold text-white">Your Approach</p>
+                {isTodayDone && (
+                  <span className="text-xs text-emerald-400 flex items-center gap-1">
+                    <CheckCircle size={11} /> Submitted
+                  </span>
+                )}
+              </div>
               <textarea
                 value={answer}
-                onChange={e => setAnswer(e.target.value)}
+                onChange={function(e) { setAnswer(e.target.value); }}
                 disabled={isTodayDone}
                 rows={5}
-                placeholder="Write your approach, pseudocode, or full solution here...&#10;&#10;Example:&#10;1. Use a hash map to store seen values&#10;2. For each number, check if complement exists&#10;3. Return indices when found"
+                placeholder={"Write your approach, pseudocode, or full solution here...\n\nExample:\n1. Use a hash map to store seen values\n2. For each number, check if complement exists\n3. Return indices when found"}
                 className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-sm text-slate-200 font-mono outline-none resize-none placeholder-slate-600 focus:border-blue-500 transition-colors leading-relaxed disabled:opacity-60"
               />
               <div className="flex gap-3">
@@ -307,7 +351,7 @@ Keep it concise and educational.`
                 <button
                   onClick={fetchSolution}
                   disabled={loadingSol}
-                  className="flex items-center gap-2 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 rounded-xl text-sm text-slate-300 transition-all"
+                  className="flex items-center gap-2 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 rounded-xl text-sm text-slate-300 transition-all"
                 >
                   <Play size={13} />
                   {loadingSol ? "Loading..." : "View AI Solution"}
@@ -338,7 +382,7 @@ Keep it concise and educational.`
             {/* Success banner */}
             {(isTodayDone || submitted) && (
               <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-4 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
                   <Trophy size={20} className="text-emerald-400" />
                 </div>
                 <div>
@@ -353,6 +397,7 @@ Keep it concise and educational.`
 
           {/* Sidebar */}
           <div className="space-y-4">
+
             {/* Streak calendar */}
             <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
               <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
@@ -360,17 +405,17 @@ Keep it concise and educational.`
                 Recent Activity
               </h3>
               <div className="grid grid-cols-7 gap-1">
-                {Array.from({ length: 28 }, (_, i) => {
+                {Array.from({ length: 28 }, function(_, i) {
                   const d = new Date();
                   d.setDate(d.getDate() - (27 - i));
                   const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
-                  const done = !!completed[key];
+                  const done    = !!completed[key];
                   const isToday = i === 27;
                   return (
                     <div
                       key={i}
                       title={d.toLocaleDateString()}
-                      className={"w-full aspect-square rounded-sm " +
+                      className={"w-full aspect-square rounded-sm transition-all " +
                         (done
                           ? "bg-emerald-500"
                           : isToday
@@ -393,24 +438,19 @@ Keep it concise and educational.`
                 Today's Info
               </h3>
               <div className="space-y-2 text-xs">
-                <div className="flex justify-between">
-                  <span className="text-slate-400">Topic</span>
-                  <span className={"px-2 py-0.5 rounded " + (TOPIC_COLORS[today.topic] || "text-slate-300")}>{today.topic}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-400">Difficulty</span>
-                  <span className={DIFFICULTY_COLORS[today.difficulty].text}>{today.difficulty}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-400">XP Reward</span>
-                  <span className="text-amber-400 font-semibold">+{today.xp} XP</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-400">Status</span>
-                  <span className={isTodayDone ? "text-emerald-400" : "text-slate-400"}>
-                    {isTodayDone ? "✓ Done" : "Pending"}
-                  </span>
-                </div>
+                {[
+                  { label: "Topic",      value: today.topic,      valueClass: TOPIC_COLORS[today.topic] || "text-slate-300" },
+                  { label: "Difficulty", value: today.difficulty, valueClass: DIFFICULTY_COLORS[today.difficulty].text },
+                  { label: "XP Reward",  value: `+${today.xp} XP`, valueClass: "text-amber-400 font-semibold" },
+                  { label: "Status",     value: isTodayDone ? "✓ Done" : "Pending", valueClass: isTodayDone ? "text-emerald-400" : "text-slate-400" },
+                ].map(function(row) {
+                  return (
+                    <div key={row.label} className="flex justify-between items-center">
+                      <span className="text-slate-400">{row.label}</span>
+                      <span className={row.valueClass}>{row.value}</span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
@@ -421,8 +461,8 @@ Keep it concise and educational.`
                 <li>→ Write your approach first, then code</li>
                 <li>→ Check the hint if you're stuck</li>
                 <li>→ View AI solution after attempting</li>
-                <li>→ Solve daily to maintain streak</li>
-                <li>→ Discuss with AI Chat Assistant</li>
+                <li>→ Solve daily to maintain your streak</li>
+                <li>→ Discuss with the AI Chat Assistant</li>
               </ul>
             </div>
           </div>
@@ -432,33 +472,32 @@ Keep it concise and educational.`
       {/* ── ALL CHALLENGES ── */}
       {activeTab === "history" && (
         <div className="space-y-4">
-          {/* Filter */}
-          <div className="flex gap-2 flex-wrap">
-            {difficulties.map(d => (
-              <button
-                key={d}
-                onClick={() => setFilter(d)}
-                className={"px-3 py-1.5 rounded-lg text-xs font-medium transition-all " +
-                  (filter === d
-                    ? "bg-blue-600 text-white"
-                    : "bg-slate-800 text-slate-400 hover:text-slate-200")}
-              >
-                {d}
-              </button>
-            ))}
-            <span className="text-xs text-slate-500 self-center ml-2">
+          <div className="flex gap-2 flex-wrap items-center">
+            {difficulties.map(function(d) {
+              return (
+                <button
+                  key={d}
+                  onClick={function() { setFilter(d); }}
+                  className={"px-3 py-1.5 rounded-lg text-xs font-medium transition-all " +
+                    (filter === d
+                      ? "bg-blue-600 text-white"
+                      : "bg-slate-800 text-slate-400 hover:text-slate-200")}
+                >
+                  {d}
+                </button>
+              );
+            })}
+            <span className="text-xs text-slate-500 ml-2">
               {completedCount}/{CHALLENGE_BANK.length} completed
             </span>
           </div>
 
-          {/* Challenge grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
-            {filteredBank.map((challenge, i) => {
-              const isToday    = i === todayIdx;
-              const isFuture   = i > todayIdx;
-              const doneDate   = Object.keys(completed).find(k => completed[k].title === challenge.title);
-              const isDone     = !!doneDate;
-              const diff       = DIFFICULTY_COLORS[challenge.difficulty];
+            {filteredBank.map(function(challenge, i) {
+              const isToday  = challenge.id - 1 === todayIdx;
+              const isFuture = challenge.id - 1 > todayIdx;
+              const isDone   = !!Object.values(completed).find(function(c) { return c.title === challenge.title; });
+              const diff     = DIFFICULTY_COLORS[challenge.difficulty];
 
               return (
                 <div
@@ -469,7 +508,7 @@ Keep it concise and educational.`
                       : isDone
                         ? "border-emerald-500/30"
                         : isFuture
-                          ? "border-slate-800 opacity-60"
+                          ? "border-slate-800 opacity-50"
                           : "border-slate-800 hover:border-slate-600")}
                 >
                   <div className="flex items-start justify-between mb-2">
@@ -477,8 +516,8 @@ Keep it concise and educational.`
                       <span className={"text-[10px] px-1.5 py-0.5 rounded border " + diff.text + " " + diff.bg + " " + diff.border}>
                         {challenge.difficulty}
                       </span>
-                      {isToday && <span className="text-[10px] text-blue-400 bg-blue-500/10 px-1.5 py-0.5 rounded">Today</span>}
-                      {isDone  && <span className="text-[10px] text-emerald-400">✓</span>}
+                      {isToday  && <span className="text-[10px] text-blue-400 bg-blue-500/10 px-1.5 py-0.5 rounded">Today</span>}
+                      {isDone   && <span className="text-[10px] text-emerald-400">✓</span>}
                       {isFuture && <Lock size={10} className="text-slate-600" />}
                     </div>
                     <span className="text-[10px] text-amber-400">+{challenge.xp} XP</span>
@@ -495,8 +534,8 @@ Keep it concise and educational.`
                     </span>
                     {isToday && !isDone && (
                       <button
-                        onClick={() => setActiveTab("today")}
-                        className="text-[10px] text-blue-400 hover:text-blue-300"
+                        onClick={function() { setActiveTab("today"); }}
+                        className="text-[10px] text-blue-400 hover:text-blue-300 transition-colors"
                       >
                         Solve now →
                       </button>

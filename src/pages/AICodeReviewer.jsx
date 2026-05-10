@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Play, Code2, AlertTriangle, Lightbulb,
   CheckCircle, Star, Clock, ChevronDown,
@@ -8,7 +8,7 @@ import {
 import { useLocalStorage } from "../hooks/useLocalStorage";
 import { useToast } from "../context/ToastContext";
 import { trackModuleVisit, trackCodeReview, trackCodeExecution, trackCodeExplanation } from "../utils/progressTracker";
-trackModuleVisit("AI Code Reviewer");
+
 
 const LANGUAGES = [
   { id: "python",     label: "Python",     icon: "🐍" },
@@ -87,10 +87,15 @@ function getSeverityColor(severity) {
 export default function AICodeReviewer() {
   const toast = useToast();
 
+      useEffect(function() {
+    trackModuleVisit("AI Code Reviewer");
+  }, []);
+
   const [code, setCode]                 = useState(SAMPLE_CODES.python);
   const [language, setLanguage]         = useState("python");
-  const [loading, setLoading]           = useState(false);
-  const [running, setRunning]           = useState(false);
+  const [reviewing, setReviewing]   = useState(false); // for Review button
+  const [explaining, setExplaining] = useState(false); // for Explain button
+  const [running, setRunning]       = useState(false);  // for Run button
   const [review, setReview]             = useState(null);
   const [output, setOutput]             = useState(null);
   const [error, setError]               = useState("");
@@ -147,7 +152,7 @@ export default function AICodeReviewer() {
   // ── EXPLAIN CODE ─────────────────────────────────────────────────────────
   async function handleExplain() {
     if (!code.trim()) return;
-    setLoading(true);
+    setExplaining(true);
     setError("");
     setReview(null);
     setShowImproved(false);
@@ -181,14 +186,14 @@ export default function AICodeReviewer() {
         ? "Cannot connect to backend. Make sure Flask is running."
         : "Something went wrong. Please try again.");
     } finally {
-      setLoading(false);
+      setExplaining(false);
     }
   }
 
   // ── AI REVIEW ────────────────────────────────────────────────────────────
   async function handleReview() {
     if (!code.trim()) return;
-    setLoading(true);
+    setReviewing(true);
     setError("");
     setReview(null);
     setShowImproved(false);
@@ -231,7 +236,7 @@ export default function AICodeReviewer() {
         toast.error("Something went wrong.", { title: "Error" });
       }
     } finally {
-      setLoading(false);
+      setReviewing(false);
     }
   }
 
@@ -349,14 +354,15 @@ export default function AICodeReviewer() {
             </button>
 
             {/* Explain */}
+            {/* Explain */}
             <button
               onClick={handleExplain}
-              disabled={loading || !code.trim()}
+              disabled={explaining || reviewing || !code.trim()}
               className="flex items-center gap-2 px-5 py-3 bg-violet-600 hover:bg-violet-500
-                         disabled:opacity-50 disabled:cursor-not-allowed rounded-xl
-                         text-sm font-semibold text-white transition-all"
+                        disabled:opacity-50 disabled:cursor-not-allowed rounded-xl
+                        text-sm font-semibold text-white transition-all"
             >
-              {loading
+              {explaining
                 ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Loading...</>
                 : <><MessageSquare size={15} />Explain Code</>}
             </button>
@@ -364,12 +370,12 @@ export default function AICodeReviewer() {
             {/* Review */}
             <button
               onClick={handleReview}
-              disabled={loading || !code.trim()}
+              disabled={reviewing || explaining || !code.trim()}
               className="flex items-center gap-2 px-5 py-3 bg-blue-600 hover:bg-blue-500
-                         disabled:opacity-50 disabled:cursor-not-allowed rounded-xl
-                         text-sm font-semibold text-white transition-all flex-1 justify-center"
+                        disabled:opacity-50 disabled:cursor-not-allowed rounded-xl
+                        text-sm font-semibold text-white transition-all flex-1 justify-center"
             >
-              {loading
+              {reviewing
                 ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Analyzing with AI...</>
                 : <><Zap size={15} />Review with AI</>}
             </button>

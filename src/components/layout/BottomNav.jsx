@@ -1,21 +1,21 @@
 import { NavLink } from "react-router-dom";
 import {
-  LayoutDashboard, GitBranch, Database,
-  Cpu, Code2, BarChart3, MessageSquare,
-  Sparkles, Trophy
+  LayoutDashboard, GitBranch, Flame,
+  MessageSquare, Code2,
 } from "lucide-react";
 
+// ── 5 most important modules for mobile ──────────────────
 const NAV_ITEMS = [
-  { path: "/",            label: "Home",      icon: LayoutDashboard },
-  { path: "/dsa",         label: "DSA",       icon: GitBranch       },
-  { path: "/sql",         label: "SQL",       icon: Database        },
-  { path: "/review",      label: "AI Review", icon: Code2           },
-  { path: "/interview",   label: "Interview", icon: MessageSquare   },
+  { path: "/",          label: "Home",      icon: LayoutDashboard },
+  { path: "/dsa",       label: "DSA",       icon: GitBranch       },
+  { path: "/challenges",label: "Daily",     icon: Flame           },
+  { path: "/review",    label: "Code AI",   icon: Code2           },
+  { path: "/interview", label: "Interview", icon: MessageSquare   },
 ];
 
 export default function BottomNav() {
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-slate-900/95 backdrop-blur-md border-t border-slate-800 flex items-center justify-around px-2 py-2 safe-area-pb">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-slate-950/95 backdrop-blur-xl border-t border-slate-800/60 flex items-center justify-around px-1 pt-2 pb-3">
       {NAV_ITEMS.map(function(item) {
         const Icon = item.icon;
         return (
@@ -25,15 +25,32 @@ export default function BottomNav() {
             end={item.path === "/"}
             className={function(obj) {
               return (
-                "flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all " +
-                (obj.isActive
-                  ? "text-blue-400 bg-blue-500/10"
-                  : "text-slate-500 hover:text-slate-300")
+                "relative flex flex-col items-center gap-1 px-4 py-1.5 rounded-xl transition-all duration-200 " +
+                (obj.isActive ? "text-blue-400" : "text-slate-500 active:scale-95")
               );
             }}
           >
-            <Icon size={20} />
-            <span className="text-[10px] font-medium">{item.label}</span>
+            {function(obj) {
+              return (
+                <>
+                  {/* Active background pill */}
+                  {obj.isActive && (
+                    <span className="absolute inset-0 bg-blue-500/10 rounded-xl border border-blue-500/20" />
+                  )}
+                  <Icon
+                    size={19}
+                    strokeWidth={obj.isActive ? 2.5 : 2}
+                    className="relative z-10"
+                  />
+                  <span className={
+                    "text-[10px] relative z-10 " +
+                    (obj.isActive ? "font-bold" : "font-medium")
+                  }>
+                    {item.label}
+                  </span>
+                </>
+              );
+            }}
           </NavLink>
         );
       })}
