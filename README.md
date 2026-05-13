@@ -365,6 +365,12 @@ Get your free Groq API key at: https://console.groq.com
 - 💼 LinkedIn: \[LinkedIn\](https://www.linkedin.com/in/yashwanth-agastya-9844-/)
 - 📧 Email: yashwanthagastya12@gmail.com
 
+
+# In README.md replace:
+[🔗 Live Demo](#)
+# With:
+[🔗 Live Demo](https://codesphere-ai-4313.vercel.app)
+
 ---
 
 ## 📄 License
