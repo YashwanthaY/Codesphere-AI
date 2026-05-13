@@ -26,7 +26,7 @@
 
 | Interview Coach | Daily Challenges |
 |----------------|-----------------|
-| ![Interview Coach](assets/interviewcoach.png) | ![Daily Challenges](assets/dailychallenges.png) |
+| ![Interview Coach](assets/interviewcoach.png) | ![Daily Challenges](assets/dailychallengespng) |
 ---
 
 ## 📌 Problem Statement
@@ -362,7 +362,7 @@ Get your free Groq API key at: https://console.groq.com
 - 🎓 Final Year B.Tech CSE (AI & ML) Student
 - 📍 Karnataka, India
 - 🔗 GitHub: [@YashwanthaY](https://github.com/YashwanthaY)
-- 💼 LinkedIn: [Add your LinkedIn URL]
+- 💼 LinkedIn: [\[LinkedIn URL\]](https://www.linkedin.com/in/yashwanth-agastya-9844-/)
 - 📧 Email: yashwanthagastya12@gmail.com
 
 ---
