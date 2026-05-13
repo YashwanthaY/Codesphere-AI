@@ -8,6 +8,7 @@ import { useToast } from "../context/ToastContext";
 import { useLocalStorage } from "../hooks/useLocalStorage";
 import { useXP } from "../context/XPContext";
 import { trackModuleVisit, trackChallenge } from "../utils/progressTracker";
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 const CHALLENGE_BANK = [
   { id: 1,  title: "Two Sum",                       difficulty: "Easy",   topic: "Arrays",         xp: 50,  description: "Given an array of integers and a target, return indices of two numbers that add up to the target.", examples: ["Input: nums=[2,7,11,15], target=9 → Output: [0,1]", "Input: nums=[3,2,4], target=6 → Output: [1,2]"], hint: "Use a hash map to store complement values." },
@@ -118,7 +119,7 @@ export default function DailyChallenges() {
     setLoadingSol(true);
     setShowSolution(true);
     try {
-      const response = await fetch("http://localhost:5000/api/chat", {
+      const response = await fetch(`${API_URL}/api/chat`, {
         method:  "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

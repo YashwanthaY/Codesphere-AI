@@ -8,6 +8,7 @@ import {
 import { useLocalStorage } from "../hooks/useLocalStorage";
 import { useToast } from "../context/ToastContext";
 import { trackModuleVisit, trackCodeReview, trackCodeExecution, trackCodeExplanation } from "../utils/progressTracker";
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 
 const LANGUAGES = [
@@ -119,7 +120,7 @@ export default function AICodeReviewer() {
     setOutput(null);
     const startTime = Date.now();
     try {
-      const response = await fetch("http://localhost:5000/api/execute", {
+      const response = await fetch(`${API_URL}/api/execute`, {
         method:  "POST",
         headers: { "Content-Type": "application/json" },
         body:    JSON.stringify({ code, language, stdin }),
@@ -157,7 +158,7 @@ export default function AICodeReviewer() {
     setReview(null);
     setShowImproved(false);
     try {
-      const response = await fetch("http://localhost:5000/api/explain", {
+      const response = await fetch(`${API_URL}/api/explain`, {
         method:  "POST",
         headers: { "Content-Type": "application/json" },
         body:    JSON.stringify({ code, language }),
@@ -198,7 +199,7 @@ export default function AICodeReviewer() {
     setReview(null);
     setShowImproved(false);
     try {
-      const response = await fetch("http://localhost:5000/api/review", {
+      const response = await fetch(`${API_URL}/api/review`, {
         method:  "POST",
         headers: { "Content-Type": "application/json" },
         body:    JSON.stringify({ code, language }),

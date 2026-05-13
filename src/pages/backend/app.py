@@ -13,15 +13,11 @@ app = Flask(__name__)
 
 # Allow requests from our React dev server (port 5173)
 # and from Vercel in production
-CORS(app, resources={
-    r"/api/*": {
-        "origins": [
-            "http://localhost:5173",
-            "http://localhost:3000",
-            "https://*.vercel.app",
-        ]
-    }
-})
+CORS(app, origins=[
+    "http://localhost:5173",
+    "http://localhost:5174",
+    "https://*.vercel.app"
+])
 
 # Register route blueprints
 app.register_blueprint(review_bp)

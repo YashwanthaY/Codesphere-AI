@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { useLocalStorage } from "../hooks/useLocalStorage";
 import { trackModuleVisit, trackInterview } from "../utils/progressTracker";
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 // ── CONSTANTS ────────────────────────────────────────────────────────────────
 const TOPICS = [
@@ -163,7 +164,7 @@ export default function InterviewCoach() {
     const fetchDiff  = isMock ? "Hard" : difficulty;
 
     try {
-      const response = await fetch("http://localhost:5000/api/interview/question", {
+      const response = await fetch(`${API_URL}/api/interview/question`, {
         method:  "POST",
         headers: { "Content-Type": "application/json" },
         body:    JSON.stringify({ topic: fetchTopic, difficulty: fetchDiff }),
@@ -198,7 +199,7 @@ export default function InterviewCoach() {
     const usedTime = totalTime - timeLeft;
 
     try {
-      const response = await fetch("http://localhost:5000/api/interview/evaluate", {
+      const response = await fetch(`${API_URL}/api/interview/evaluate`, {
         method:  "POST",
         headers: { "Content-Type": "application/json" },
         body:    JSON.stringify({
