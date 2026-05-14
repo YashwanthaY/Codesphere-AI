@@ -62,7 +62,7 @@ Respond ONLY with a valid JSON object (no markdown, no extra text):
         result = clean_json(text)
         return {"success": True, "data": result}
     except json.JSONDecodeError as e:
-        return {"success": False, "error": f"Failed to parse AI response: {str(e)}"}
+        return {"success": True, "explanation": text}
     except Exception as e:
         return {"success": False, "error": str(e)}
 
