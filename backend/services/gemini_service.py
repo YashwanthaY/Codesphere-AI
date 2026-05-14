@@ -11,7 +11,6 @@ MODEL = "llama-3.3-70b-versatile"
 
 
 def call_groq(prompt: str) -> str:
-    """Call Groq REST API directly — no SDK needed."""
     headers = {
         "Authorization": f"Bearer {GROQ_API_KEY}",
         "Content-Type": "application/json",
@@ -62,7 +61,7 @@ Respond ONLY with a valid JSON object (no markdown, no extra text):
         result = clean_json(text)
         return {"success": True, "data": result}
     except json.JSONDecodeError as e:
-        return {"success": True, "explanation": text}
+        return {"success": False, "error": f"Failed to parse AI response: {str(e)}"}
     except Exception as e:
         return {"success": False, "error": str(e)}
 
@@ -106,12 +105,14 @@ Respond ONLY with valid JSON:
         return {"success": True, "data": result}
     except Exception as e:
         return {"success": False, "error": str(e)}
+
+
 def execute_code(code: str, language: str, stdin: str = "") -> dict:
     stdin_section = f"\nStandard Input (stdin):\n{stdin}" if stdin else ""
     prompt = f"""You are a code interpreter. Execute the following {language} code mentally and return ONLY the output.
 
 CODE:
-````{language}
+```{language}
 {code}
 ```{stdin_section}
 
@@ -136,7 +137,7 @@ Respond in this exact JSON format:
         return {"success": False, "error": f"Failed to parse response: {str(e)}"}
     except Exception as e:
         return {"success": False, "error": str(e)}
-    
+
 
 def chat_response(message: str) -> dict:
     prompt = f"""You are an expert DSA tutor and coding interview coach.
@@ -152,8 +153,8 @@ Answer:"""
         return {"success": True, "reply": text}
     except Exception as e:
         return {"success": False, "error": str(e)}
-    
-    
+
+
 def explain_code(code: str, language: str) -> dict:
     prompt = f"""You are a coding teacher explaining code to a beginner student.
 Explain the following {language} code clearly and simply.
@@ -169,7 +170,7 @@ Rules:
 - Use simple English, no jargon
 - Format like:
   OVERVIEW: ...
-  
+
   LINE BY LINE:
   Line 1-3: ...
   Line 4: ...
@@ -178,7 +179,6 @@ Rules:
 - Mention time/space complexity if relevant"""
     try:
         text = call_groq(prompt)
-        return {{"success": True, "explanation": text}}
+        return {"success": True, "explanation": text}
     except Exception as e:
-        return {{"success": False, "error": str(e)}}
-    
+        return {"success": False, "error": str(e)}
